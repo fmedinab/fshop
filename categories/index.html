@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Catálogo | TrendStore</title>
+  <link rel="stylesheet" href="/assets/css/style.css">
+  <style>
+    .category-filters { display: flex; gap: 12px; margin-bottom: 40px; flex-wrap: wrap; justify-content: center; }
+    .filter-btn { padding: 8px 20px; border-radius: 20px; font-weight: 600; font-size: 0.95rem; border: 1px solid var(--border-color); background: var(--card-background); color: var(--text-color); transition: var(--transition); cursor: pointer; }
+    .filter-btn:hover { border-color: var(--primary-color); color: var(--primary-color); }
+    .filter-btn.active { background-color: var(--primary-color); color: white; border-color: var(--primary-color); }
+  </style>
+</head>
+<body>
+  <div id="header-container"></div>
+
+  <main class="container py-2">
+    <h1 style="font-size: 2.5rem; text-align: center; font-weight: 800; margin-bottom: 10px;">Catálogo Completo</h1>
+    <p class="text-center" style="color: var(--text-light); margin-bottom: 30px;">Encuentra lo que buscas en nuestras categorías.</p>
+    
+    <div id="category-filters" class="category-filters">
+      <button class="filter-btn active" data-category="all">Todos los productos</button>
+    </div>
+
+    <div id="products-container" class="products-grid">
+      <div class="product-card skeleton" style="height: 400px;"></div>
+      <div class="product-card skeleton" style="height: 400px;"></div>
+      <div class="product-card skeleton" style="height: 400px;"></div>
+    </div>
+  </main>
+
+  <div id="footer-container"></div>
+
+  <script type="module">
+    import { renderHeader } from '/components/header.js';
+    import { renderFooter } from '/components/footer.js';
+    import { ApiService } from '/services/api.js';
+    import '/assets/js/main.js';
+
+    let allProducts = [];
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      renderHeader();
+      renderFooter();
+
+      const filtersContainer = document.getElementById('category-filters');
+      const productsContainer = document.getElementById('products-container');
+
+      try {
+        const [categories, products] = await Promise.all([
+          ApiService.getCategories(),
+          ApiService.getProducts()
+        ]);
+        
+        allProducts = products;
+
+        categories.forEach(cat => {
+          const btn = document.createElement('button');
+          btn.className = 'filter-btn';
+          btn.setAttribute('data-category', cat.id);
+          btn.textContent = cat.name;
+          filtersContainer.appendChild(btn);
+        });
+
+        filtersContainer.addEventListener('click', (e) => {
+          if (e.target.classList.contains('filter-btn')) {
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            renderProducts(e.target.getAttribute('data-category'));
+          }
+        });
+
+        renderProducts('all');
+
+      } catch (error) {
+        productsContainer.innerHTML = '<p style="color: var(--error-color);">Error cargando el catálogo.</p>';
+      }
+
+      function renderProducts(categoryId) {
+        const filtered = categoryId === 'all' ? allProducts : allProducts.filter(p => p.category === categoryId);
+        if (filtered.length === 0) {
+          productsContainer.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-light);">No hay productos en esta categoría.</p>';
+          return;
+        }
+        productsContainer.innerHTML = filtered.map(p => window.generateProductCardHTML(p)).join('');
+      }
+    });
+  </script>
+</body>
+</html>

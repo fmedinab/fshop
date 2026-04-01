@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Detalles del Producto | TrendStore</title>
+  <link rel="stylesheet" href="/assets/css/style.css">
+  <style>
+    .product-detail-container { display: grid; grid-template-columns: 1fr 1fr; gap: 50px; margin-top: 20px; background: var(--card-background); padding: 40px; border-radius: var(--border-radius); box-shadow: var(--box-shadow); border: 1px solid var(--border-color); }
+    .quantity-selector { display: inline-flex; align-items: center; background: var(--background-color); border: 1px solid var(--border-color); border-radius: 8px; padding: 5px; margin-bottom: 20px; }
+    .qty-btn { background: transparent; border: none; width: 40px; height: 40px; font-size: 1.5rem; cursor: pointer; color: var(--text-color); transition: color 0.2s ease; }
+    .qty-btn:hover { color: var(--primary-color); }
+    #qty-input { width: 60px; text-align: center; font-size: 1.2rem; font-weight: bold; border: none; background: transparent; color: var(--text-color); outline: none; }
+    .stock-badge { display: inline-block; padding: 6px 14px; background-color: rgba(16, 185, 129, 0.1); color: var(--success-color); border-radius: 20px; font-size: 0.9rem; font-weight: 700; margin-bottom: 20px; }
+    .stock-badge.low { background-color: rgba(245, 158, 11, 0.1); color: var(--warning-color); }
+    .stock-badge.out { background-color: rgba(239, 68, 68, 0.1); color: var(--error-color); }
+    @media (max-width: 768px) { .product-detail-container { grid-template-columns: 1fr; padding: 20px; } }
+  </style>
+</head>
+<body>
+  <div id="header-container"></div>
+
+  <main class="container py-2">
+    <div id="product-content">
+      <div class="skeleton" style="height: 600px; border-radius: 16px;"></div>
+    </div>
+  </main>
+
+  <div id="footer-container"></div>
+
+  <script type="module">
+    import { renderHeader } from '/components/header.js';
+    import { renderFooter } from '/components/footer.js';
+    import { ApiService } from '/services/api.js';
+    import { CartService } from '/services/cart.js';
+    import '/assets/js/main.js';
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      renderHeader();
+      renderFooter();
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const productId = urlParams.get('id');
+      const container = document.getElementById('product-content');
+
+      if (!productId) {
+        container.innerHTML = '<div class="text-center py-2"><h2 style="color: var(--error-color);">Producto no encontrado</h2><a href="/categories/" class="btn btn-primary mt-2">Volver al catálogo</a></div>';
+        return;
+      }
+
+      try {
+        const products = await ApiService.getProducts();
+        const product = products.find(p => p.id === productId);
+
+        if (!product) throw new Error('Product not found');
+
+        // State for variants
+        let selectedSize = null;
+        let selectedColor = null;
+        const images = product.images && product.images.length > 0 ? product.images : [product.image];
+        const hasSale = product.originalPrice && product.originalPrice > product.price;
+
+        let stockClass = 'stock-badge';
+        let stockText = `Stock Disponible: ${product.stock}`;
+        if(product.stock === 0) { stockClass += ' out'; stockText = 'Agotado'; }
+        else if(product.stock <= 5) { stockClass += ' low'; stockText = `¡Solo quedan ${product.stock}!`; }
+
+        // Build HTML
+        let html = `
+          <a href="/categories/" style="display: inline-block; margin-bottom: 20px; color: var(--text-light); font-weight: 500;">← Volver al catálogo</a>
+          <div class="product-detail-container">
+            
+            <!-- GALLERY -->
+            <div class="product-gallery">
+              <div class="main-img-wrapper">
+                <img id="main-product-image" src="${images[0]}" alt="${product.name}">
+              </div>
+              ${images.length > 1 ? `
+                <div class="thumbnail-list">
+                  ${images.map((img, idx) => `
+                    <div class="thumbnail ${idx === 0 ? 'active' : ''}" data-src="${img}">
+                      <img src="${img}" alt="Miniatura ${idx+1}">
+                    </div>
+                  `).join('')}
+                </div>
+              ` : ''}
+            </div>
+
+            <!-- DETAILS -->
+            <div style="display: flex; flex-direction: column;">
+              <div>
+                <span class="${stockClass}">${stockText}</span>
+                <span class="product-category-badge" style="position:static; display:inline-block; margin-left:10px; box-shadow:none; border:1px solid var(--border-color);">${product.category}</span>
+              </div>
+              
+              <h1 style="font-size: 2.5rem; line-height: 1.2; margin-bottom: 15px; margin-top: 10px;">${product.name}</h1>
+              
+              <div style="margin-bottom: 25px;">
+                ${hasSale ? `<div class="price-original" style="font-size: 1.2rem;">${window.formatPrice(product.originalPrice)}</div>` : ''}
+                <div style="font-size: 2.2rem; color: ${hasSale ? 'var(--error-color)' : 'var(--primary-color)'}; font-weight: 900;">
+                  ${window.formatPrice(product.price)}
+                </div>
+              </div>
+
+              <p style="color: var(--text-light); font-size: 1.05rem; line-height: 1.8; margin-bottom: 30px;">
+                ${product.description || 'Producto de alta calidad garantizada.'}
+              </p>
+              
+              <!-- VARIANTS -->
+              ${product.sizes && product.sizes.length > 0 ? `
+                <div class="variant-section">
+                  <div class="variant-title">Selecciona Talla: <span id="size-label" style="color:var(--primary-color); font-weight:bold;"></span></div>
+                  <div class="variant-options" id="size-options">
+                    ${product.sizes.map(size => `<button class="variant-btn size-btn" data-value="${size}">${size}</button>`).join('')}
+                  </div>
+                </div>
+              ` : ''}
+
+              ${product.colors && product.colors.length > 0 ? `
+                <div class="variant-section">
+                  <div class="variant-title">Selecciona Color: <span id="color-label" style="color:var(--primary-color); font-weight:bold;"></span></div>
+                  <div class="variant-options" id="color-options">
+                    ${product.colors.map(color => `
+                      <div class="color-swatch" data-name="${color.name}" data-hex="${color.hex}" style="background-color: ${color.hex};" title="${color.name}"></div>
+                    `).join('')}
+                  </div>
+                </div>
+              ` : ''}
+
+              <div>
+                <div class="variant-title">Cantidad:</div>
+                <div class="quantity-selector">
+                  <button class="qty-btn" id="btn-minus">−</button>
+                  <input type="number" id="qty-input" value="1" min="1" max="${product.stock}" readonly>
+                  <button class="qty-btn" id="btn-plus">+</button>
+                </div>
+              </div>
+
+              <button id="add-to-cart-btn" class="btn btn-primary" style="width: 100%; font-size: 1.2rem; padding: 18px; border-radius: 12px; margin-top: auto;" ${product.stock === 0 ? 'disabled' : ''}>
+                ${product.stock === 0 ? 'Agotado' : '🛒 Añadir al Carrito'}
+              </button>
+            </div>
+          </div>
+        `;
+        container.innerHTML = html;
+
+        // Gallery Logic
+        const mainImage = document.getElementById('main-product-image');
+        document.querySelectorAll('.thumbnail').forEach(thumb => {
+          thumb.addEventListener('click', (e) => {
+            document.querySelectorAll('.thumbnail').forEach(t => t.classList.remove('active'));
+            const target = e.currentTarget;
+            target.classList.add('active');
+            mainImage.src = target.dataset.src;
+          });
+        });
+
+        // Size Logic
+        document.querySelectorAll('.size-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+            const target = e.currentTarget;
+            target.classList.add('active');
+            selectedSize = target.dataset.value;
+            document.getElementById('size-label').textContent = selectedSize;
+          });
+        });
+
+        // Color Logic
+        document.querySelectorAll('.color-swatch').forEach(swatch => {
+          swatch.addEventListener('click', (e) => {
+            document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+            const target = e.currentTarget;
+            target.classList.add('active');
+            selectedColor = { name: target.dataset.name, hex: target.dataset.hex };
+            document.getElementById('color-label').textContent = selectedColor.name;
+          });
+        });
+
+        // Quantity Logic
+        const qtyInput = document.getElementById('qty-input');
+        document.getElementById('btn-minus').addEventListener('click', () => {
+          let val = parseInt(qtyInput.value);
+          if (val > 1) qtyInput.value = val - 1;
+        });
+        document.getElementById('btn-plus').addEventListener('click', () => {
+          let val = parseInt(qtyInput.value);
+          if (val < product.stock) qtyInput.value = val + 1;
+        });
+
+        // Add to Cart Logic
+        document.getElementById('add-to-cart-btn').addEventListener('click', () => {
+          if (product.sizes && product.sizes.length > 0 && !selectedSize) {
+            window.showToast('Por favor selecciona una talla', 'warning');
+            return;
+          }
+          if (product.colors && product.colors.length > 0 && !selectedColor) {
+            window.showToast('Por favor selecciona un color', 'warning');
+            return;
+          }
+          const quantity = parseInt(qtyInput.value);
+          CartService.addItem(product, quantity, selectedSize, selectedColor);
+        });
+
+      } catch (error) {
+        container.innerHTML = '<h2 class="text-center" style="color: var(--error-color);">Error cargando los detalles del producto</h2>';
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mi Cuenta | TrendStore</title>
+  <link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body>
+  <div id="header-container"></div>
+
+  <main class="container py-2">
+    <h1 style="font-size: 2.5rem; font-weight: 800; margin-bottom: 10px;">Mi Cuenta</h1>
+    <p style="color: var(--text-light); margin-bottom: 30px;">Gestiona tu perfil, revisa tus pedidos y productos favoritos.</p>
+
+    <div class="account-layout">
+      <!-- SIDEBAR -->
+      <aside class="account-sidebar">
+        <div class="account-nav-item active" data-tab="profile">👤 Mi Perfil</div>
+        <div class="account-nav-item" data-tab="purchases">📦 Mis Compras</div>
+        <div class="account-nav-item" data-tab="favorites">❤️ Mis Favoritos</div>
+        <div class="account-nav-item" style="color: var(--error-color); border-top: 1px solid var(--border-color); margin-top: 10px;" onclick="window.logoutClient()">🚪 Cerrar Sesión</div>
+      </aside>
+
+      <!-- CONTENT -->
+      <main class="account-content">
+        
+        <!-- TAB: PERFIL -->
+        <div id="tab-profile" class="account-tab active">
+          <h2 style="font-size: 1.5rem; margin-bottom: 25px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">Datos Personales</h2>
+          <form id="profile-form" style="max-width: 500px;">
+            <div class="form-group">
+              <label>Nombre Completo</label>
+              <input type="text" id="prof-name" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label>Correo Electrónico</label>
+              <input type="email" id="prof-email" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label>Teléfono</label>
+              <input type="tel" id="prof-phone" class="form-control" placeholder="+51 999 888 777">
+            </div>
+            <button type="submit" class="btn btn-primary" style="margin-top: 10px;">Actualizar Datos</button>
+          </form>
+        </div>
+
+        <!-- TAB: COMPRAS -->
+        <div id="tab-purchases" class="account-tab">
+          <h2 style="font-size: 1.5rem; margin-bottom: 25px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">Historial de Compras</h2>
+          <div id="purchases-container">
+            <div class="skeleton" style="height: 100px; margin-bottom: 15px;"></div>
+            <div class="skeleton" style="height: 100px;"></div>
+          </div>
+        </div>
+
+        <!-- TAB: FAVORITOS -->
+        <div id="tab-favorites" class="account-tab">
+          <h2 style="font-size: 1.5rem; margin-bottom: 25px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">Mis Productos Favoritos</h2>
+          <div id="favorites-container" class="products-grid" style="grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); padding: 0;">
+            <div class="skeleton" style="height: 300px;"></div>
+            <div class="skeleton" style="height: 300px;"></div>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </main>
+
+  <div id="footer-container"></div>
+
+  <script type="module">
+    import { renderHeader } from '/components/header.js';
+    import { renderFooter } from '/components/footer.js';
+    import { ApiService } from '/services/api.js';
+    import { AuthService } from '/services/auth.js';
+    import { FavoritesService } from '/services/favorites.js';
+    import '/assets/js/main.js';
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      renderHeader();
+      renderFooter();
+
+      const user = AuthService.getUser();
+      if (!user) {
+        window.location.href = '/';
+        return;
+      }
+
+      // Populate Profile Form
+      document.getElementById('prof-name').value = user.name;
+      document.getElementById('prof-email').value = user.email;
+
+      document.getElementById('profile-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        window.showToast('Perfil actualizado correctamente', 'success');
+      });
+
+      // Tab Navigation Logic
+      const navItems = document.querySelectorAll('.account-nav-item[data-tab]');
+      const tabs = document.querySelectorAll('.account-tab');
+
+      const switchTab = (tabId) => {
+        navItems.forEach(n => n.classList.remove('active'));
+        tabs.forEach(t => t.classList.remove('active'));
+        
+        const activeNav = document.querySelector(`.account-nav-item[data-tab="${tabId}"]`);
+        const activeTab = document.getElementById(`tab-${tabId}`);
+        
+        if (activeNav && activeTab) {
+          activeNav.classList.add('active');
+          activeTab.classList.add('active');
+          
+          // Update URL without reload
+          const url = new URL(window.location);
+          url.searchParams.set('tab', tabId);
+          window.history.pushState({}, '', url);
+
+          // Load specific data if needed
+          if (tabId === 'purchases') renderPurchases();
+          if (tabId === 'favorites') window.renderFavorites();
+        }
+      };
+
+      navItems.forEach(item => {
+        item.addEventListener('click', () => switchTab(item.getAttribute('data-tab')));
+      });
+
+      // Read URL param to open specific tab
+      const urlParams = new URLSearchParams(window.location.search);
+      const initialTab = urlParams.get('tab') || 'profile';
+      switchTab(initialTab);
+
+      // Render Purchases
+      async function renderPurchases() {
+        const container = document.getElementById('purchases-container');
+        try {
+          const orders = await ApiService.getOrders();
+          const userOrders = orders.filter(o => o.customer === user.name);
+          
+          if (userOrders.length === 0) {
+            container.innerHTML = '<p style="color: var(--text-light);">Aún no has realizado ninguna compra.</p><a href="/categories/" class="btn btn-primary mt-2">Ir a comprar</a>';
+            return;
+          }
+
+          container.innerHTML = userOrders.map(o => `
+            <div class="order-card">
+              <div class="order-card-info">
+                <h4>Pedido ${o.id}</h4>
+                <p>Fecha: ${o.date} | Método: ${o.method}</p>
+              </div>
+              <div style="text-align: right;">
+                <div style="font-size: 1.2rem; font-weight: bold; color: var(--primary-color); margin-bottom: 5px;">${window.formatPrice(o.total)}</div>
+                <span class="badge ${o.status === 'Completado' ? 'badge-success' : 'badge-warning'}">${o.status}</span>
+              </div>
+            </div>
+          `).join('');
+        } catch (error) {
+          container.innerHTML = '<p style="color: var(--error-color);">Error cargando historial.</p>';
+        }
+      }
+
+      // Render Favorites (Exposed globally so toggleFav can re-render it)
+      window.renderFavorites = async function() {
+        const container = document.getElementById('favorites-container');
+        const favIds = FavoritesService.getFavorites();
+        
+        if (favIds.length === 0) {
+          container.innerHTML = '<div style="grid-column: 1/-1;"><p style="color: var(--text-light);">No tienes productos favoritos aún.</p><a href="/categories/" class="btn btn-outline mt-2">Explorar Catálogo</a></div>';
+          return;
+        }
+
+        try {
+          const products = await ApiService.getProducts();
+          const favProducts = products.filter(p => favIds.includes(p.id));
+          container.innerHTML = favProducts.map(p => window.generateProductCardHTML(p)).join('');
+        } catch (error) {
+          container.innerHTML = '<p style="color: var(--error-color);">Error cargando favoritos.</p>';
+        }
+      };
+    });
+  </script>
+</body>
+</html>

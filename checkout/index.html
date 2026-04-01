@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Checkout | TrendStore</title>
+  <link rel="stylesheet" href="/assets/css/style.css">
+  <style>
+    .checkout-container { display: grid; grid-template-columns: 1.5fr 1fr; gap: 40px; margin-top: 20px; }
+    .checkout-form { background: var(--card-background); padding: 40px; border-radius: var(--border-radius); box-shadow: var(--box-shadow); border: 1px solid var(--border-color); }
+    .payment-methods { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 20px; }
+    .payment-method { border: 2px solid var(--border-color); border-radius: 12px; padding: 20px 10px; text-align: center; cursor: pointer; transition: var(--transition); background: var(--background-color); font-weight: 600; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .payment-method svg { width: 32px; height: 32px; color: var(--text-light); transition: var(--transition); }
+    .payment-method.active { border-color: var(--primary-color); background: rgba(79, 70, 229, 0.05); color: var(--primary-color); }
+    .payment-method.active svg { color: var(--primary-color); }
+    .payment-details { margin-top: 25px; padding: 25px; background: var(--background-color); border-radius: 12px; border: 1px dashed var(--border-color); display: none; }
+    .payment-details.active { display: block; animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+    .qr-placeholder { width: 180px; height: 180px; background: white; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; border-radius: 16px; border: 2px solid var(--border-color); font-weight: bold; color: var(--text-light); }
+    #preview-img { max-width: 100%; margin-top: 15px; border-radius: 12px; display: none; border: 1px solid var(--border-color); }
+    .summary-card { background: var(--card-background); padding: 30px; border-radius: var(--border-radius); box-shadow: var(--box-shadow); border: 1px solid var(--border-color); height: fit-content; position: sticky; top: 90px; }
+    .summary-item { display: flex; justify-content: space-between; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid var(--border-color); }
+    .item-variant-text { font-size: 0.8rem; color: var(--text-light); display: block; margin-top: 2px; }
+    @media (max-width: 900px) { .checkout-container { grid-template-columns: 1fr; } .payment-methods { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div id="header-container"></div>
+
+  <main class="container py-2">
+    <h1 style="font-size: 2.5rem; font-weight: 800; margin-bottom: 10px;">Finalizar Compra</h1>
+    <div class="checkout-container">
+      <div class="checkout-form">
+        <h2 style="margin-bottom: 25px; font-size: 1.5rem; border-bottom: 2px solid var(--border-color); padding-bottom: 10px;">Datos de Envío</h2>
+        <form id="checkout-form">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div class="form-group"><label>Nombre Completo</label><input type="text" id="customer-name" class="form-control" required></div>
+            <div class="form-group"><label>Teléfono</label><input type="tel" id="customer-phone" class="form-control" required></div>
+          </div>
+          <div class="form-group"><label>Dirección de Entrega</label><input type="text" id="customer-address" class="form-control" required></div>
+
+          <h2 style="margin: 40px 0 20px; font-size: 1.5rem; border-bottom: 2px solid var(--border-color); padding-bottom: 10px;">Método de Pago</h2>
+          <div class="payment-methods">
+            <div class="payment-method active" data-method="mercadopago">Mercado Pago</div>
+            <div class="payment-method" data-method="yape">Yape</div>
+            <div class="payment-method" data-method="plin">Plin</div>
+          </div>
+
+          <div id="manual-payment-details" class="payment-details">
+            <h3 class="text-center" id="manual-title">Pago Manual</h3>
+            <div class="text-center"><span id="manual-phone" style="font-size: 2rem; font-weight: 900; color: var(--primary-color);"></span></div>
+            <div class="qr-placeholder">QR Code</div>
+            <div class="form-group"><label>Sube tu comprobante</label><input type="file" id="receipt-file" class="form-control" accept="image/*"><img id="preview-img"></div>
+          </div>
+
+          <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 40px; font-size: 1.2rem; padding: 18px;" id="submit-order-btn">Confirmar Pedido</button>
+        </form>
+      </div>
+
+      <div class="summary-card">
+        <h3 style="font-size: 1.3rem; margin-bottom: 20px;">Resumen del Pedido</h3>
+        <div id="checkout-items" style="margin-bottom: 20px;"></div>
+        <div style="display: flex; justify-content: space-between; font-size: 1.1rem; margin-bottom: 10px; color: var(--text-light);"><span>Subtotal</span><span id="checkout-subtotal"></span></div>
+        <div style="display: flex; justify-content: space-between; font-size: 1.8rem; font-weight: 900; color: var(--text-color); border-top: 1px solid var(--border-color); padding-top: 15px; margin-top: 15px;"><span>Total</span><span id="checkout-total"></span></div>
+      </div>
+    </div>
+  </main>
+
+  <div id="footer-container"></div>
+
+  <script type="module">
+    import { renderHeader } from '/components/header.js';
+    import { renderFooter } from '/components/footer.js';
+    import { CartService } from '/services/cart.js';
+    import { ApiService } from '/services/api.js';
+    import '/assets/js/main.js';
+
+    document.addEventListener('DOMContentLoaded', () => {
+      renderHeader();
+      renderFooter();
+
+      const cart = CartService.getCart();
+      if (cart.length === 0) { window.location.href = '/cart/'; return; }
+
+      const itemsContainer = document.getElementById('checkout-items');
+      itemsContainer.innerHTML = cart.map(item => {
+        let variants = [];
+        if(item.selectedSize) variants.push(item.selectedSize);
+        if(item.selectedColor) variants.push(item.selectedColor.name);
+        
+        return `
+          <div class="summary-item">
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <div style="width: 40px; height: 40px; background: var(--background-color); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: var(--primary-color);">${item.quantity}x</div>
+              <div>
+                <span style="font-weight: 500;">${item.name}</span>
+                ${variants.length > 0 ? `<span class="item-variant-text">${variants.join(' / ')}</span>` : ''}
+              </div>
+            </div>
+            <span style="font-weight: 600;">${window.formatPrice(item.price * item.quantity)}</span>
+          </div>
+        `;
+      }).join('');
+      
+      const totalFormatted = window.formatPrice(CartService.getTotal());
+      document.getElementById('checkout-subtotal').textContent = totalFormatted;
+      document.getElementById('checkout-total').textContent = totalFormatted;
+
+      // Leer configuraciones dinámicas de la API para los números de pago
+      const settings = ApiService.getSettings();
+
+      let selectedMethod = 'mercadopago';
+      const manualDetails = document.getElementById('manual-payment-details');
+      const manualTitle = document.getElementById('manual-title');
+      const manualPhone = document.getElementById('manual-phone');
+      const receiptInput = document.getElementById('receipt-file');
+
+      document.querySelectorAll('.payment-method').forEach(el => {
+        el.addEventListener('click', (e) => {
+          document.querySelectorAll('.payment-method').forEach(m => m.classList.remove('active'));
+          e.currentTarget.classList.add('active');
+          selectedMethod = e.currentTarget.dataset.method;
+          
+          if (selectedMethod === 'yape' || selectedMethod === 'plin') {
+            manualDetails.classList.add('active');
+            manualTitle.textContent = `Pago con ${selectedMethod.toUpperCase()}`;
+            // Usar los números configurados en el Dashboard Admin
+            manualPhone.textContent = selectedMethod === 'yape' ? settings.yapePhone : settings.plinPhone;
+            receiptInput.required = true;
+          } else {
+            manualDetails.classList.remove('active');
+            receiptInput.required = false;
+          }
+        });
+      });
+
+      let receiptBase64 = null;
+      receiptInput.addEventListener('change', async (e) => {
+        if (e.target.files[0]) {
+          receiptBase64 = await window.fileToBase64(e.target.files[0]);
+          document.getElementById('preview-img').src = receiptBase64;
+          document.getElementById('preview-img').style.display = 'block';
+        }
+      });
+
+      document.getElementById('checkout-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('submit-order-btn');
+        btn.innerHTML = '<span class="spinner"></span> Procesando...'; btn.disabled = true;
+
+        const orderData = {
+          customer: { name: document.getElementById('customer-name').value, phone: document.getElementById('customer-phone').value, address: document.getElementById('customer-address').value },
+          items: cart, total: CartService.getTotal(), paymentMethod: selectedMethod, receiptImage: receiptBase64, date: new Date().toISOString()
+        };
+
+        try {
+          const response = await ApiService.createOrder(orderData);
+          if (selectedMethod === 'mercadopago' && response.init_point) window.location.href = response.init_point;
+          else {
+            CartService.clearCart();
+            window.showToast('¡Pedido confirmado!', 'success');
+            setTimeout(() => window.location.href = '/', 2000);
+          }
+        } catch (error) {
+          window.showToast('Error al procesar', 'error');
+          btn.textContent = 'Confirmar Pedido'; btn.disabled = false;
+        }
+      });
+    });
+  </script>
+</body>
+</html>

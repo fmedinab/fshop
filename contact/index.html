@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contacto | TrendStore</title>
+  <link rel="stylesheet" href="/assets/css/style.css">
+  <style>
+    .contact-grid { display: grid; grid-template-columns: 1fr 1.5fr; gap: 40px; margin-top: 40px; }
+    .contact-info-card { background: var(--primary-color); color: white; padding: 40px; border-radius: var(--border-radius); box-shadow: var(--box-shadow); }
+    .contact-item { display: flex; align-items: flex-start; gap: 15px; margin-bottom: 30px; font-size: 1.1rem; }
+    .contact-icon { font-size: 1.5rem; background: rgba(255,255,255,0.2); width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
+    .contact-form-card { background: var(--card-background); padding: 40px; border-radius: var(--border-radius); box-shadow: var(--box-shadow); border: 1px solid var(--border-color); }
+    @media (max-width: 768px) { .contact-grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div id="header-container"></div>
+
+  <main class="container py-2">
+    <div style="text-align: center;">
+      <h1 style="font-size: 2.5rem; font-weight: 900;">Contáctanos</h1>
+      <p style="color: var(--text-light); font-size: 1.1rem; margin-top: 10px;">Estamos aquí para ayudarte. Escríbenos o visítanos.</p>
+    </div>
+
+    <div class="contact-grid">
+      <div class="contact-info-card">
+        <h3 style="font-size: 1.5rem; margin-bottom: 30px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 15px;">Información de Contacto</h3>
+        
+        <div class="contact-item">
+          <div class="contact-icon">📍</div>
+          <div>
+            <strong style="display: block; margin-bottom: 5px;">Dirección</strong>
+            <span id="c-address">Cargando...</span>
+          </div>
+        </div>
+        
+        <div class="contact-item">
+          <div class="contact-icon">📞</div>
+          <div>
+            <strong style="display: block; margin-bottom: 5px;">Teléfono</strong>
+            <span id="c-phone">Cargando...</span>
+          </div>
+        </div>
+        
+        <div class="contact-item">
+          <div class="contact-icon">✉️</div>
+          <div>
+            <strong style="display: block; margin-bottom: 5px;">Correo Electrónico</strong>
+            <span id="c-email">Cargando...</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="contact-form-card">
+        <h3 style="font-size: 1.5rem; margin-bottom: 25px;">Envíanos un mensaje</h3>
+        <form id="contact-form">
+          <div class="form-group">
+            <label>Nombre Completo</label>
+            <input type="text" class="form-control" required placeholder="Tu nombre">
+          </div>
+          <div class="form-group">
+            <label>Correo Electrónico</label>
+            <input type="email" class="form-control" required placeholder="tu@email.com">
+          </div>
+          <div class="form-group">
+            <label>Mensaje</label>
+            <textarea class="form-control" rows="5" required placeholder="¿En qué podemos ayudarte?"></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary" style="width: 100%; font-size: 1.1rem; padding: 15px;">Enviar Mensaje</button>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <div id="footer-container"></div>
+
+  <script type="module">
+    import { renderHeader } from '/components/header.js';
+    import { renderFooter } from '/components/footer.js';
+    import { ApiService } from '/services/api.js';
+    import '/assets/js/main.js';
+
+    document.addEventListener('DOMContentLoaded', () => {
+      renderHeader();
+      renderFooter();
+
+      const settings = ApiService.getSettings();
+      document.getElementById('c-address').textContent = settings.contactAddress;
+      document.getElementById('c-phone').textContent = settings.contactPhone;
+      document.getElementById('c-email').textContent = settings.contactEmail;
+
+      document.getElementById('contact-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const btn = e.target.querySelector('button');
+        btn.innerHTML = '<span class="spinner"></span> Enviando...';
+        btn.disabled = true;
+        
+        setTimeout(() => {
+          window.showToast('Mensaje enviado correctamente. Te contactaremos pronto.', 'success');
+          e.target.reset();
+          btn.textContent = 'Enviar Mensaje';
+          btn.disabled = false;
+        }, 1500);
+      });
+    });
+  </script>
+</body>
+</html>

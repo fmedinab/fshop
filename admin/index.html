@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard Pro | TrendStore</title>
+  <link rel="stylesheet" href="/assets/css/style.css">
+  <style>
+    /* Admin Layout Specifics */
+    .admin-layout { display: flex; min-height: 100vh; background: var(--background-color); }
+    .admin-sidebar { width: 260px; background: var(--card-background); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; transition: all 0.3s ease; z-index: 1000; }
+    .admin-sidebar-header { padding: 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+    .admin-nav { display: flex; flex-direction: column; padding: 10px 0; flex-grow: 1; overflow-y: auto; }
+    .admin-nav-item { padding: 12px 20px; cursor: pointer; color: var(--text-color); font-weight: 500; transition: var(--transition); display: flex; align-items: center; gap: 10px; }
+    .admin-nav-item:hover, .admin-nav-item.active { background: rgba(79, 70, 229, 0.05); color: var(--primary-color); border-left: 4px solid var(--primary-color); }
+    
+    .admin-main { flex-grow: 1; display: flex; flex-direction: column; max-width: calc(100% - 260px); }
+    .admin-header { height: 70px; background: var(--card-background); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; padding: 0 20px; justify-content: space-between; position: sticky; top: 0; z-index: 99; }
+    .admin-section { display: none; padding: 30px; animation: fadeIn 0.3s ease; overflow-y: auto; }
+    .admin-section.active { display: block; }
+
+    /* Tables */
+    .table-container { background: var(--card-background); border-radius: var(--border-radius); border: 1px solid var(--border-color); overflow-x: auto; }
+    .data-table { width: 100%; border-collapse: collapse; text-align: left; }
+    .data-table th, .data-table td { padding: 15px 20px; border-bottom: 1px solid var(--border-color); color: var(--text-color); }
+    .data-table th { background: rgba(79, 70, 229, 0.03); font-weight: 600; font-size: 0.9rem; text-transform: uppercase; color: var(--text-light); }
+    .data-table tr:hover { background: rgba(79, 70, 229, 0.02); }
+
+    /* Dashboard Cards */
+    .dashboard-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 30px; }
+    .stat-card { background: var(--card-background); padding: 20px; border-radius: var(--border-radius); box-shadow: var(--box-shadow); border: 1px solid var(--border-color); display: flex; align-items: center; gap: 15px; }
+    .stat-icon { width: 50px; height: 50px; border-radius: 12px; background: rgba(79, 70, 229, 0.1); color: var(--primary-color); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
+    .stat-info h4 { font-size: 0.85rem; color: var(--text-light); margin-bottom: 5px; text-transform: uppercase; }
+    .stat-info .value { font-size: 1.5rem; font-weight: 800; color: var(--text-color); }
+    
+    .alert-banner { background: rgba(245, 158, 11, 0.1); border-left: 4px solid var(--warning-color); padding: 15px 20px; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; color: var(--text-color); }
+    
+    /* Charts */
+    .chart-container { background: var(--card-background); padding: 20px; border-radius: var(--border-radius); border: 1px solid var(--border-color); margin-bottom: 30px; }
+    .bar-chart { display: flex; align-items: flex-end; gap: 15px; height: 250px; padding-top: 20px; border-bottom: 1px solid var(--border-color); margin-bottom: 10px; }
+    .bar-wrapper { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 10px; }
+    .bar { width: 100%; background: var(--primary-color); border-radius: 6px 6px 0 0; min-height: 10px; position: relative; transition: height 0.5s ease; }
+    .bar:hover { background: var(--primary-dark); }
+    .bar-value { font-size: 0.75rem; font-weight: bold; color: var(--text-light); }
+    .bar-label { font-size: 0.8rem; color: var(--text-light); text-align: center; }
+    
+    /* Progress Bars */
+    .progress-group { margin-bottom: 15px; }
+    .progress-header { display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 5px; font-weight: 600; color: var(--text-color); }
+    .progress-bar-bg { width: 100%; height: 10px; background: var(--border-color); border-radius: 5px; overflow: hidden; }
+    .progress-bar-fill { height: 100%; background: var(--primary-color); border-radius: 5px; }
+    
+    /* Notifications */
+    .notif-page-item { display: flex; gap: 15px; padding: 20px; border-bottom: 1px solid var(--border-color); align-items: flex-start; }
+    .notif-page-item:last-child { border-bottom: none; }
+    .notif-page-item.unread { background: rgba(79, 70, 229, 0.03); }
+    .notif-page-icon { font-size: 2rem; }
+    
+    .nav-bottom-actions { margin-top: auto; border-top: 1px solid var(--border-color); padding-top: 10px; }
+
+    /* Modals */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; z-index: 9999; }
+    .modal-overlay.active { display: flex; animation: fadeIn 0.2s ease; }
+    .modal-content { background: var(--card-background); width: 90%; max-width: 600px; border-radius: var(--border-radius); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2); max-height: 90vh; overflow-y: auto; }
+    .modal-header { padding: 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: var(--card-background); z-index: 10; }
+    .modal-title { font-size: 1.25rem; font-weight: 700; color: var(--text-color); }
+    .modal-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-light); }
+    .modal-close:hover { color: var(--error-color); }
+    #modal-body { padding: 20px; }
+
+    /* Responsive Sidebar Fixes */
+    @media (max-width: 900px) {
+      .admin-sidebar { position: fixed; left: -100%; top: 0; bottom: 0; z-index: 1000; box-shadow: 5px 0 15px rgba(0,0,0,0.1); }
+      .admin-sidebar.open { left: 0; }
+      .admin-main { max-width: 100%; }
+      .mobile-menu-btn { display: block !important; }
+      .grid-2 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="admin-layout">
+    <!-- SIDEBAR -->
+    <aside class="admin-sidebar" id="admin-sidebar">
+      <div class="admin-sidebar-header">
+        <a href="/" class="logo" style="font-size: 1.2rem;">TrendStore<span>Admin</span></a>
+        <button class="mobile-menu-btn" onclick="document.getElementById('admin-sidebar').classList.remove('open')" style="display:none; background:none; border:none; font-size:1.5rem; color:var(--text-color); cursor:pointer;">✕</button>
+      </div>
+      <nav class="admin-nav">
+        <div class="admin-nav-item active" data-target="dashboard">📊 Dashboard</div>
+        <div class="admin-nav-item" data-target="inventory">🛍️ Productos</div>
+        <div class="admin-nav-item" data-target="categories">📂 Categorías</div>
+        <div class="admin-nav-item" data-target="sales">💰 Ventas</div>
+        <div class="admin-nav-item" data-target="users">👥 Usuarios</div>
+        <div class="admin-nav-item" data-target="promotions">🎯 Promociones & Cupones</div>
+        <div class="admin-nav-item" data-target="delivery">🚚 Delivery</div>
+        <div class="admin-nav-item" data-target="reports">📈 Reportes</div>
+        <div class="admin-nav-item" data-target="notifications">🔔 Notificaciones</div>
+        <div class="admin-nav-item" data-target="pages">📄 Páginas y Contenido</div>
+        <div class="admin-nav-item" data-target="settings">⚙️ Configuración</div>
+        <div class="admin-nav-item" data-target="profile">👤 Mi Perfil</div>
+        
+        <div class="nav-bottom-actions">
+          <a href="/" class="admin-nav-item">⬅️ Volver a la Tienda</a>
+          <div class="admin-nav-item" onclick="window.logout()" style="color: var(--error-color); font-weight: bold;">🚪 Cerrar Sesión</div>
+        </div>
+      </nav>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="admin-main">
+      <div class="admin-header">
+        <button class="btn btn-outline mobile-menu-btn" onclick="document.getElementById('admin-sidebar').classList.add('open')" style="display:none; padding: 5px 10px;">☰</button>
+        
+        <div style="display: flex; gap: 15px; align-items: center; margin-left: auto;">
+          <button id="admin-theme-toggle" class="btn btn-outline" style="padding: 6px 10px; border-radius: 8px; border: none; font-size: 1.2rem;" title="Modo Oscuro">🌙</button>
+        </div>
+      </div>
+
+      <!-- 1. DASHBOARD -->
+      <section id="section-dashboard" class="admin-section active">
+        <div class="alert-banner">
+          <div><strong>🔔 Alertas:</strong> Tienes pedidos pendientes de revisión.</div>
+          <button class="btn btn-sm btn-outline" onclick="document.querySelector('[data-target=\'sales\']').click()">Revisar</button>
+        </div>
+        <div class="dashboard-cards">
+          <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-info"><h4>Ventas del Mes</h4><div class="value" id="dash-sales">S/ 0.00</div></div></div>
+          <div class="stat-card"><div class="stat-icon">📦</div><div class="stat-info"><h4>Pedidos Totales</h4><div class="value" id="dash-orders">0</div></div></div>
+          <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-info"><h4>Usuarios Activos</h4><div class="value" id="dash-users">0</div></div></div>
+          <div class="stat-card"><div class="stat-icon">🛒</div><div class="stat-info"><h4>Tasa de Conversión</h4><div class="value">3.2%</div></div></div>
+        </div>
+      </section>
+
+      <!-- 2. INVENTORY (Productos) -->
+      <section id="section-inventory" class="admin-section">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 20px; align-items: center;">
+          <h2 style="font-size: 1.5rem;">Gestión de Productos</h2>
+          <button class="btn btn-primary" onclick="window.openProductModal()">+ Nuevo Producto</button>
+        </div>
+        <div class="table-container">
+          <table class="data-table">
+            <thead><tr><th>Producto</th><th>Categoría</th><th>Precio / Stock</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody id="inventory-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 3. CATEGORIES -->
+      <section id="section-categories" class="admin-section">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 20px; align-items: center;">
+          <h2 style="font-size: 1.5rem;">Categorías</h2>
+          <button class="btn btn-primary" onclick="window.openCategoryModal()">+ Nueva Categoría</button>
+        </div>
+        <div class="table-container">
+          <table class="data-table">
+            <thead><tr><th>ID</th><th>Nombre</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody id="categories-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 4. SALES -->
+      <section id="section-sales" class="admin-section">
+        <h2 style="font-size: 1.5rem; margin-bottom: 20px;">Historial de Ventas</h2>
+        <div class="table-container">
+          <table class="data-table">
+            <thead><tr><th>Pedido</th><th>Cliente</th><th>Fecha</th><th>Método</th><th>Total</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody id="sales-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 5. USERS -->
+      <section id="section-users" class="admin-section">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 20px; align-items: center;">
+          <h2 style="font-size: 1.5rem;">Gestión de Usuarios</h2>
+          <button class="btn btn-primary" onclick="window.showToast('Función de invitar usuario en desarrollo', 'warning')">+ Invitar Usuario</button>
+        </div>
+        <div class="table-container">
+          <table class="data-table">
+            <thead><tr><th>ID</th><th>Nombre</th><th>Correo</th><th>Rol</th><th>Registro</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody id="users-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 6. PROMOTIONS -->
+      <section id="section-promotions" class="admin-section">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 20px; align-items: center;">
+          <h2 style="font-size: 1.5rem;">Sliders Dinámicos (Inicio)</h2>
+          <button class="btn btn-primary" onclick="window.openSliderModal()">+ Nuevo Slider</button>
+        </div>
+        <div class="table-container">
+          <table class="data-table">
+            <thead><tr><th>Imagen</th><th>Título</th><th>Enlace</th><th>Acciones</th></tr></thead>
+            <tbody id="sliders-body"></tbody>
+          </table>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; margin-bottom: 20px; align-items: center; margin-top: 40px;">
+          <h2 style="font-size: 1.5rem;">Cupones de Descuento</h2>
+          <button class="btn btn-primary" onclick="window.openCouponModal()">+ Nuevo Cupón</button>
+        </div>
+        <div class="table-container">
+          <table class="data-table">
+            <thead><tr><th>Código</th><th>Descuento</th><th>Vencimiento</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody id="coupons-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 7. DELIVERY -->
+      <section id="section-delivery" class="admin-section">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 20px; align-items: center;">
+          <h2 style="font-size: 1.5rem;">Zonas de Envío</h2>
+          <button class="btn btn-primary" onclick="window.openZoneModal()">+ Agregar Zona</button>
+        </div>
+        <div class="table-container">
+          <table class="data-table">
+            <thead><tr><th>Distrito / Zona</th><th>Costo (S/)</th><th>Tiempo Estimado</th><th>Acciones</th></tr></thead>
+            <tbody id="delivery-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 8. REPORTS -->
+      <section id="section-reports" class="admin-section">
+        <h2 style="font-size: 1.5rem; margin-bottom: 20px;">Reportes y Analytics</h2>
+        
+        <div class="chart-container">
+          <h3 style="margin-bottom: 20px;">Ventas de la Semana</h3>
+          <div class="bar-chart">
+            <div class="bar-wrapper"><span class="bar-value">S/ 1200</span><div class="bar" style="height: 40%;"></div><span class="bar-label">Lun</span></div>
+            <div class="bar-wrapper"><span class="bar-value">S/ 2500</span><div class="bar" style="height: 80%;"></div><span class="bar-label">Mar</span></div>
+            <div class="bar-wrapper"><span class="bar-value">S/ 1800</span><div class="bar" style="height: 60%;"></div><span class="bar-label">Mié</span></div>
+            <div class="bar-wrapper"><span class="bar-value">S/ 3200</span><div class="bar" style="height: 100%;"></div><span class="bar-label">Jue</span></div>
+            <div class="bar-wrapper"><span class="bar-value">S/ 2100</span><div class="bar" style="height: 70%;"></div><span class="bar-label">Vie</span></div>
+            <div class="bar-wrapper"><span class="bar-value">S/ 2900</span><div class="bar" style="height: 90%;"></div><span class="bar-label">Sáb</span></div>
+            <div class="bar-wrapper"><span class="bar-value">S/ 1500</span><div class="bar" style="height: 50%;"></div><span class="bar-label">Dom</span></div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="table-container" style="padding: 20px;">
+            <h3 style="margin-bottom: 15px;">Top Productos Más Vendidos</h3>
+            <table class="data-table" style="min-width: 100%;">
+              <thead><tr><th>Producto</th><th>Unidades</th><th>Ingresos</th></tr></thead>
+              <tbody id="reports-top-products"></tbody>
+            </table>
+          </div>
+          
+          <div class="table-container" style="padding: 20px;">
+            <h3 style="margin-bottom: 25px;">Ingresos por Método de Pago</h3>
+            <div id="reports-payment-methods"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 9. NOTIFICATIONS -->
+      <section id="section-notifications" class="admin-section">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 20px; align-items: center;">
+          <h2 style="font-size: 1.5rem;">Centro de Notificaciones</h2>
+          <button class="btn btn-outline" onclick="window.showToast('Todas marcadas como leídas', 'success')">Marcar todas como leídas</button>
+        </div>
+        <div class="table-container" id="notifications-list" style="display: flex; flex-direction: column;">
+          <!-- Injected via JS -->
+        </div>
+      </section>
+
+      <!-- 10. PAGES & CONTENT -->
+      <section id="section-pages" class="admin-section">
+        <h2 style="font-size: 1.5rem; margin-bottom: 20px;">Páginas Dinámicas</h2>
+        <div class="grid-2">
+          <div class="table-container" style="padding: 20px;">
+            <h3 style="margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">Página: Sobre Nosotros</h3>
+            <div class="form-group"><label>Título Principal</label><input type="text" id="set-about-title" class="form-control"></div>
+            <div class="form-group"><label>Contenido (Texto)</label><textarea id="set-about-text" class="form-control" rows="8"></textarea></div>
+            <button class="btn btn-primary" onclick="window.saveDynamicPages()">Guardar Contenido</button>
+          </div>
+
+          <div class="table-container" style="padding: 20px;">
+            <h3 style="margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">Página: Contacto</h3>
+            <div class="form-group"><label>Correo Electrónico</label><input type="email" id="set-contact-email" class="form-control"></div>
+            <div class="form-group"><label>Teléfono</label><input type="text" id="set-contact-phone" class="form-control"></div>
+            <div class="form-group"><label>Dirección Física</label><input type="text" id="set-contact-address" class="form-control"></div>
+            <button class="btn btn-primary" onclick="window.saveDynamicPages()">Guardar Contacto</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 11. SETTINGS -->
+      <section id="section-settings" class="admin-section">
+        <h2 style="font-size: 1.5rem; margin-bottom: 20px;">Configuración del Negocio</h2>
+        
+        <div class="grid-2">
+          <!-- Datos del Negocio -->
+          <div class="table-container" style="padding: 20px;">
+            <h3 style="margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">Datos del Negocio</h3>
+            <div class="form-group"><label>Nombre de la Tienda</label><input type="text" id="set-business-name" class="form-control"></div>
+            <div class="form-group"><label>RUC / Documento</label><input type="text" id="set-business-ruc" class="form-control"></div>
+            <div class="form-group"><label>Impuestos (IGV / IVA %)</label><input type="number" id="set-tax-rate" class="form-control"></div>
+            <div class="form-group"><label>Google Apps Script API URL</label><input type="text" id="set-api-url" class="form-control" placeholder="https://script.google.com/macros/s/..."></div>
+          </div>
+
+          <!-- Métodos de Pago -->
+          <div class="table-container" style="padding: 20px;">
+            <h3 style="margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">Métodos de Pago</h3>
+            
+            <h4 style="margin-bottom: 10px; color: var(--primary-color);">Manuales (Transferencias)</h4>
+            <div class="grid-2">
+              <div class="form-group"><label>Número Yape</label><input type="text" id="set-yape" class="form-control" placeholder="999 888 777"></div>
+              <div class="form-group"><label>Número Plin</label><input type="text" id="set-plin" class="form-control" placeholder="999 888 777"></div>
+            </div>
+
+            <h4 style="margin: 20px 0 10px; color: var(--primary-color);">Mercado Pago</h4>
+            <div class="form-group"><label>Public Key</label><input type="text" id="set-mp-pub" class="form-control" placeholder="TEST-..."></div>
+            <div class="form-group"><label>Access Token</label><input type="text" id="set-mp-acc" class="form-control" placeholder="TEST-..."></div>
+          </div>
+
+          <!-- Mantenimiento y Diseño -->
+          <div class="table-container" style="padding: 20px; grid-column: 1 / -1;">
+            <h3 style="margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">Estado y Diseño</h3>
+            
+            <div style="background: rgba(245, 158, 11, 0.1); padding: 20px; border-radius: 8px; border: 1px solid var(--warning-color); margin-bottom: 20px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <span style="font-weight: 800; color: var(--text-color); font-size: 1.1rem;">Modo Mantenimiento</span>
+                <label class="toggle-switch"><input type="checkbox" id="set-maintenance-toggle"><span class="toggle-slider"></span></label>
+              </div>
+              <p style="font-size: 0.9rem; color: var(--text-color);">Si activas esto, los clientes verán una pantalla de "Volvemos pronto".</p>
+            </div>
+
+            <div class="form-group">
+              <label>Color Principal de la Tienda (Dinámico)</label>
+              <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <button class="admin-color-btn" data-color="indigo" style="width:35px; height:35px; border-radius:50%; border:none; background:#4f46e5; cursor:pointer;"></button>
+                <button class="admin-color-btn" data-color="rose" style="width:35px; height:35px; border-radius:50%; border:none; background:#e11d48; cursor:pointer;"></button>
+                <button class="admin-color-btn" data-color="emerald" style="width:35px; height:35px; border-radius:50%; border:none; background:#059669; cursor:pointer;"></button>
+                <button class="admin-color-btn" data-color="amber" style="width:35px; height:35px; border-radius:50%; border:none; background:#d97706; cursor:pointer;"></button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="text-align: right; margin-bottom: 40px;">
+          <button class="btn btn-primary" style="padding: 15px 30px; font-size: 1.1rem;" onclick="window.saveSettingsData()">Guardar Toda la Configuración</button>
+        </div>
+      </section>
+
+      <!-- 12. PROFILE & SECURITY -->
+      <section id="section-profile" class="admin-section">
+        <h2 style="font-size: 1.5rem; margin-bottom: 20px;">Mi Perfil y Seguridad</h2>
+        <div class="grid-2">
+          
+          <!-- Datos del Perfil -->
+          <div class="table-container" style="padding: 20px;">
+            <h3 style="margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">Datos del Perfil</h3>
+            <div class="form-group"><label>Nombre Completo</label><input type="text" class="form-control" value="Admin Principal"></div>
+            <div class="form-group"><label>Correo Electrónico</label><input type="email" class="form-control" value="admin@trendstore.com"></div>
+            <button class="btn btn-primary" onclick="window.showToast('Perfil actualizado correctamente', 'success')">Actualizar Perfil</button>
+          </div>
+
+          <!-- Seguridad -->
+          <div class="table-container" style="padding: 20px;">
+            <h3 style="margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">Seguridad</h3>
+            <div class="form-group"><label>Contraseña Actual</label><input type="password" class="form-control" placeholder="••••••••"></div>
+            <div class="form-group"><label>Nueva Contraseña</label><input type="password" class="form-control" placeholder="••••••••"></div>
+            <button class="btn btn-primary" onclick="window.showToast('Contraseña cambiada exitosamente', 'success')">Cambiar Contraseña</button>
+          </div>
+
+          <!-- Copias de Seguridad (Backup) -->
+          <div class="table-container" style="padding: 20px; grid-column: 1 / -1; background: rgba(79, 70, 229, 0.03);">
+            <h3 style="margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; color: var(--primary-color);">Copias de Seguridad (Backup)</h3>
+            <p style="color: var(--text-light); margin-bottom: 20px;">Exporta toda la configuración, preferencias y datos locales de tu tienda a un archivo seguro. También puedes restaurar tu tienda subiendo un archivo de backup previo.</p>
+            
+            <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+              <button class="btn btn-primary" onclick="window.exportBackup()">
+                📥 Descargar Backup (.json)
+              </button>
+              
+              <label class="btn btn-outline" style="cursor: pointer; margin: 0;">
+                📤 Restaurar Backup
+                <input type="file" id="import-backup-file" accept=".json" style="display: none;" onchange="window.importBackup(event)">
+              </label>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- GLOBAL MODAL -->
+  <div id="global-modal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modal-title" class="modal-title">Título</h3>
+        <button class="modal-close" onclick="window.closeModal()">✕</button>
+      </div>
+      <div id="modal-body" style="padding-bottom: 20px;"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { ApiService } from '/services/api.js';
+    import { AuthService } from '/services/auth.js';
+    import '/assets/js/main.js';
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      
+      // --- DARK MODE LOGIC ---
+      const themeToggle = document.getElementById('admin-theme-toggle');
+      const savedMode = localStorage.getItem('darkMode');
+      
+      if (savedMode === 'true') {
+        document.body.classList.add('dark-mode');
+        themeToggle.textContent = '☀️';
+      } else {
+        themeToggle.textContent = '🌙';
+      }
+
+      themeToggle.addEventListener('click', () => {
+        document.body.classList.toggle('dark-mode');
+        const isDark = document.body.classList.contains('dark-mode');
+        localStorage.setItem('darkMode', isDark);
+        themeToggle.textContent = isDark ? '☀️' : '🌙';
+      });
+
+      // --- NAVIGATION LOGIC ---
+      const navItems = document.querySelectorAll('.admin-nav-item[data-target]');
+      const sections = document.querySelectorAll('.admin-section');
+
+      navItems.forEach(item => {
+        item.addEventListener('click', () => {
+          navItems.forEach(n => n.classList.remove('active'));
+          sections.forEach(s => s.classList.remove('active'));
+          item.classList.add('active');
+          document.getElementById(`section-${item.getAttribute('data-target')}`).classList.add('active');
+          document.getElementById('admin-sidebar').classList.remove('open');
+        });
+      });
+
+      // --- MODAL SYSTEM WITH FORMS ---
+      window.openModal = (title, formHtml) => {
+        document.getElementById('modal-title').textContent = title;
+        document.getElementById('modal-body').innerHTML = `
+          ${formHtml}
+          <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 20px;">
+            <button class="btn btn-outline" onclick="window.closeModal()">Cancelar</button>
+            <button class="btn btn-primary" onclick="window.showToast('Guardado exitosamente', 'success'); window.closeModal();">Guardar Cambios</button>
+          </div>
+        `;
+        document.getElementById('global-modal').classList.add('active');
+      };
+      
+      window.closeModal = () => {
+        document.getElementById('global-modal').classList.remove('active');
+      };
+
+      // Form Templates (Safely handling arrays)
+      window.updateVariantFields = (category) => {
+        const lblSizes = document.getElementById('lbl-sizes');
+        const inputSizes = document.getElementById('input-sizes');
+        if (lblSizes && inputSizes) {
+          if (category === 'fashion') {
+            lblSizes.textContent = 'Tallas (ej: S, M, L o 39, 40)';
+            if(!inputSizes.value) inputSizes.placeholder = 'S, M, L';
+          } else {
+            lblSizes.textContent = 'Variantes/Medidas (ej: 14", 16" o 128GB)';
+            if(!inputSizes.value) inputSizes.placeholder = '14", 16"';
+          }
+        }
+      };
+
+      window.openProductModal = (p = null) => {
+        const isFashion = p ? p.category === 'fashion' : true;
+        
+        // Safe array handling
+        const imagesStr = p && p.images ? p.images.join(', ') : (p && p.image ? p.image : '');
+        const sizesStr = p && p.sizes ? p.sizes.join(', ') : '';
+        const colorsStr = p && p.colors ? p.colors.map(c=>c.name+':'+c.hex).join(', ') : '';
+
+        const html = `
+          <div class="grid-2">
+            <div class="form-group"><label>Nombre del Producto</label><input type="text" class="form-control" value="${p ? p.name : ''}"></div>
+            <div class="form-group">
+              <label>Categoría</label>
+              <select class="form-control" onchange="window.updateVariantFields(this.value)">
+                <option value="fashion" ${p && p.category==='fashion'?'selected':''}>Moda (Ropa/Zapatos)</option>
+                <option value="tech" ${p && p.category==='tech'?'selected':''}>Tecnología</option>
+              </select>
+            </div>
+          </div>
+          <div class="grid-2">
+            <div class="form-group"><label>Precio de Venta (S/)</label><input type="number" class="form-control" value="${p ? p.price : ''}"></div>
+            <div class="form-group"><label>Precio Original (Oferta S/)</label><input type="number" class="form-control" value="${p && p.originalPrice ? p.originalPrice : ''}"></div>
+          </div>
+          <div class="grid-2">
+            <div class="form-group"><label>Stock Disponible</label><input type="number" class="form-control" value="${p ? p.stock : ''}"></div>
+            <div class="form-group"><label>Estado</label><select class="form-control"><option>Activo</option><option>Inactivo</option></select></div>
+          </div>
+          <div class="form-group"><label>URLs de Imágenes (separadas por coma)</label><textarea class="form-control" rows="2">${imagesStr}</textarea></div>
+          
+          <div style="background: var(--background-color); padding: 15px; border-radius: 8px; border: 1px dashed var(--border-color); margin-bottom: 20px;">
+            <h4 style="margin-bottom: 10px; font-size: 0.95rem;">Variantes del Producto</h4>
+            <div class="grid-2">
+              <div class="form-group">
+                <label id="lbl-sizes">${isFashion ? 'Tallas (ej: S, M, L o 39, 40)' : 'Variantes/Medidas (ej: 14", 16")'}</label>
+                <input type="text" id="input-sizes" class="form-control" value="${sizesStr}" placeholder="${isFashion ? 'S, M, L' : '128GB, 256GB'}">
+              </div>
+              <div class="form-group">
+                <label>Colores (ej: Negro:#000000, Rojo:#ff0000)</label>
+                <input type="text" class="form-control" value="${colorsStr}" placeholder="Negro:#000000, Blanco:#ffffff">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group"><label>Descripción</label><textarea class="form-control" rows="3">${p && p.description ? p.description : ''}</textarea></div>
+        `;
+        window.openModal(p ? 'Editar Producto' : 'Nuevo Producto', html);
+      };
+
+      window.openCategoryModal = (c = null) => {
+        const html = `
+          <div class="form-group"><label>ID de Categoría (ej: tech)</label><input type="text" class="form-control" value="${c ? c.id : ''}" ${c ? 'disabled' : ''}></div>
+          <div class="form-group"><label>Nombre Público (ej: 💻 Tecnología)</label><input type="text" class="form-control" value="${c ? c.name : ''}"></div>
+          <div class="form-group"><label>Estado</label><select class="form-control"><option>Activo</option><option>Inactivo</option></select></div>
+        `;
+        window.openModal(c ? 'Editar Categoría' : 'Nueva Categoría', html);
+      };
+
+      window.openSliderModal = (s = null) => {
+        const html = `
+          <div class="form-group"><label>Título</label><input type="text" class="form-control" value="${s ? s.title : ''}"></div>
+          <div class="form-group"><label>Subtítulo</label><input type="text" class="form-control" value="${s ? s.subtitle : ''}"></div>
+          <div class="form-group"><label>URL de Imagen</label><input type="text" class="form-control" value="${s ? s.image : ''}"></div>
+          <div class="grid-2">
+            <div class="form-group"><label>Texto del Botón</label><input type="text" class="form-control" value="${s ? s.buttonText : ''}"></div>
+            <div class="form-group"><label>Enlace del Botón</label><input type="text" class="form-control" value="${s ? s.link : ''}"></div>
+          </div>
+        `;
+        window.openModal(s ? 'Editar Slider' : 'Nuevo Slider', html);
+      };
+
+      window.openCouponModal = (c = null) => {
+        const html = `
+          <div class="grid-2">
+            <div class="form-group"><label>Código del Cupón</label><input type="text" class="form-control" value="${c ? c.code : ''}" style="text-transform: uppercase;"></div>
+            <div class="form-group"><label>Descuento (ej: 20% o S/ 50)</label><input type="text" class="form-control" value="${c ? c.discount : ''}"></div>
+          </div>
+          <div class="grid-2">
+            <div class="form-group"><label>Fecha de Vencimiento</label><input type="date" class="form-control" value="${c ? c.expires : ''}"></div>
+            <div class="form-group"><label>Estado</label><select class="form-control"><option ${c && c.status==='Activo'?'selected':''}>Activo</option><option ${c && c.status==='Inactivo'?'selected':''}>Inactivo</option></select></div>
+          </div>
+        `;
+        window.openModal(c ? 'Editar Cupón' : 'Nuevo Cupón', html);
+      };
+
+      window.openZoneModal = (z = null) => {
+        const html = `
+          <div class="form-group"><label>Nombre del Distrito / Zona</label><input type="text" class="form-control" value="${z ? z.zone : ''}"></div>
+          <div class="grid-2">
+            <div class="form-group"><label>Costo de Envío (S/)</label><input type="number" class="form-control" value="${z ? z.cost : ''}"></div>
+            <div class="form-group"><label>Tiempo Estimado (ej: 24-48 hrs)</label><input type="text" class="form-control" value="${z ? z.time : ''}"></div>
+          </div>
+        `;
+        window.openModal(z ? 'Editar Zona' : 'Nueva Zona', html);
+      };
+
+      // --- LOAD DATA ---
+      try {
+        const [products, categories, orders, sliders, coupons, users, notifications, stats] = await Promise.all([
+          ApiService.getProducts(),
+          ApiService.getCategories(),
+          ApiService.getOrders(),
+          ApiService.getSliders(),
+          ApiService.getCoupons(),
+          ApiService.getUsers(),
+          ApiService.getNotifications(),
+          ApiService.getDashboardStats()
+        ]);
+
+        // 1. Dashboard
+        document.getElementById('dash-sales').textContent = window.formatPrice(stats.totalSales);
+        document.getElementById('dash-orders').textContent = stats.totalOrders;
+        document.getElementById('dash-users').textContent = stats.activeUsers;
+
+        // 2. Products
+        window.mockProductsData = products;
+        document.getElementById('inventory-body').innerHTML = products.map((p, i) => `
+          <tr>
+            <td><div style="font-weight: 600; display:flex; align-items:center; gap:10px;"><img src="${p.images && p.images.length > 0 ? p.images[0] : (p.image || 'https://placehold.co/100')}" style="width:40px; height:40px; border-radius:8px; object-fit:cover;"> ${p.name}</div></td>
+            <td><span class="badge badge-primary">${p.category}</span></td>
+            <td><div style="font-weight: bold;">${window.formatPrice(p.price)}</div><div style="font-size: 0.85rem; color: var(--text-light);">${p.stock} en stock</div></td>
+            <td><span class="badge badge-success">Activo</span></td>
+            <td>
+              <button class="btn btn-outline btn-sm" onclick="window.openProductModal(window.mockProductsData[${i}])">✏️</button>
+              <button class="btn btn-danger btn-sm" onclick="window.showToast('Producto eliminado', 'error')">🗑️</button>
+            </td>
+          </tr>
+        `).join('');
+
+        // 3. Categories
+        window.mockCategoriesData = categories;
+        document.getElementById('categories-body').innerHTML = categories.map((c, i) => `
+          <tr>
+            <td>${c.id}</td>
+            <td><strong>${c.name}</strong></td>
+            <td><span class="badge badge-success">Activo</span></td>
+            <td><button class="btn btn-outline btn-sm" onclick="window.openCategoryModal(window.mockCategoriesData[${i}])">✏️</button></td>
+          </tr>
+        `).join('');
+
+        // 4. Sales
+        document.getElementById('sales-body').innerHTML = orders.map(o => `
+          <tr>
+            <td><strong>${o.id}</strong></td>
+            <td>${o.customer}</td>
+            <td>${o.date}</td>
+            <td><span class="badge badge-neutral">${o.method}</span></td>
+            <td><strong>${window.formatPrice(o.total)}</strong></td>
+            <td><span class="badge ${o.status === 'Completado' ? 'badge-success' : 'badge-warning'}">${o.status}</span></td>
+            <td>
+              <button class="btn btn-outline btn-sm" onclick="window.showToast('Generando Boleta PDF...', 'success')">📄 PDF</button>
+            </td>
+          </tr>
+        `).join('');
+
+        // 5. Users
+        document.getElementById('users-body').innerHTML = users.map(u => `
+          <tr>
+            <td>${u.id}</td>
+            <td><strong>${u.name}</strong></td>
+            <td>${u.email}</td>
+            <td><span class="badge ${u.role === 'Admin' ? 'badge-primary' : 'badge-neutral'}">${u.role}</span></td>
+            <td>${u.registered}</td>
+            <td><span class="badge badge-success">${u.status}</span></td>
+            <td>
+              <button class="btn btn-outline btn-sm" onclick="window.showToast('Editando usuario', 'success')">✏️</button>
+            </td>
+          </tr>
+        `).join('');
+
+        // 6. Promotions
+        window.mockSlidersData = sliders;
+        document.getElementById('sliders-body').innerHTML = sliders.map((s, i) => `
+          <tr>
+            <td><img src="${s.image}" style="width:80px; height:40px; object-fit:cover; border-radius:8px;"></td>
+            <td><strong>${s.title}</strong></td>
+            <td>${s.link}</td>
+            <td><button class="btn btn-outline btn-sm" onclick="window.openSliderModal(window.mockSlidersData[${i}])">✏️</button></td>
+          </tr>
+        `).join('');
+
+        window.mockCouponsData = coupons;
+        document.getElementById('coupons-body').innerHTML = coupons.map((c, i) => `
+          <tr>
+            <td><strong>${c.code}</strong></td>
+            <td><span class="badge badge-primary">${c.discount}</span></td>
+            <td>${c.expires}</td>
+            <td><span class="badge ${c.status === 'Activo' ? 'badge-success' : 'badge-neutral'}">${c.status}</span></td>
+            <td><button class="btn btn-outline btn-sm" onclick="window.openCouponModal(window.mockCouponsData[${i}])">✏️</button></td>
+          </tr>
+        `).join('');
+
+        // 7. Delivery
+        const mockDelivery = [{ zone: 'Lima Metropolitana', cost: 15.00, time: '24-48 hrs' }, { zone: 'Callao', cost: 18.00, time: '24-48 hrs' }, { zone: 'Provincias', cost: 25.00, time: '3-5 días' }];
+        window.mockDeliveryData = mockDelivery;
+        document.getElementById('delivery-body').innerHTML = mockDelivery.map((d, i) => `
+          <tr>
+            <td><strong>${d.zone}</strong></td>
+            <td>${window.formatPrice(d.cost)}</td>
+            <td>${d.time}</td>
+            <td><button class="btn btn-outline btn-sm" onclick="window.openZoneModal(window.mockDeliveryData[${i}])">✏️</button></td>
+          </tr>
+        `).join('');
+
+        // 8. Reports Enhancements
+        document.getElementById('reports-top-products').innerHTML = stats.topProducts.map(p => `
+          <tr>
+            <td><strong>${p.name}</strong></td>
+            <td>${p.sales} und.</td>
+            <td style="color: var(--primary-color); font-weight: bold;">${window.formatPrice(p.revenue)}</td>
+          </tr>
+        `).join('');
+
+        document.getElementById('reports-payment-methods').innerHTML = `
+          <div class="progress-group">
+            <div class="progress-header"><span>Mercado Pago</span><span>${stats.paymentMethods.mercadopago}%</span></div>
+            <div class="progress-bar-bg"><div class="progress-bar-fill" style="width: ${stats.paymentMethods.mercadopago}%; background: #009ee3;"></div></div>
+          </div>
+          <div class="progress-group">
+            <div class="progress-header"><span>Yape</span><span>${stats.paymentMethods.yape}%</span></div>
+            <div class="progress-bar-bg"><div class="progress-bar-fill" style="width: ${stats.paymentMethods.yape}%; background: #742284;"></div></div>
+          </div>
+          <div class="progress-group">
+            <div class="progress-header"><span>Plin</span><span>${stats.paymentMethods.plin}%</span></div>
+            <div class="progress-bar-bg"><div class="progress-bar-fill" style="width: ${stats.paymentMethods.plin}%; background: #00d2b6;"></div></div>
+          </div>
+        `;
+
+        // 9. Notifications
+        document.getElementById('notifications-list').innerHTML = notifications.map(n => {
+          let icon = '🔔';
+          if(n.type === 'order') icon = '📦';
+          if(n.type === 'alert') icon = '⚠️';
+          if(n.type === 'payment') icon = '💰';
+          
+          return `
+          <div class="notif-page-item ${!n.read ? 'unread' : ''}">
+            <div class="notif-page-icon">${icon}</div>
+            <div style="flex-grow: 1;">
+              <h4 style="font-size: 1.1rem; margin-bottom: 5px; color: var(--text-color);">${n.title}</h4>
+              <p style="color: var(--text-light); margin-bottom: 5px;">${n.message}</p>
+              <span style="font-size: 0.8rem; color: var(--primary-color); font-weight: bold;">${n.date}</span>
+            </div>
+            ${!n.read ? `<button class="btn btn-sm btn-outline" onclick="this.parentElement.classList.remove('unread'); this.remove();">Marcar leída</button>` : ''}
+          </div>
+        `}).join('');
+
+      } catch (error) {
+        console.error("Error loading admin data", error);
+      }
+
+      // --- SETTINGS & PAGES LOGIC ---
+      const settings = ApiService.getSettings();
+      
+      // Load Pages Data
+      document.getElementById('set-about-title').value = settings.aboutTitle;
+      document.getElementById('set-about-text').value = settings.aboutText;
+      document.getElementById('set-contact-email').value = settings.contactEmail;
+      document.getElementById('set-contact-phone').value = settings.contactPhone;
+      document.getElementById('set-contact-address').value = settings.contactAddress;
+      
+      // Load Business Settings Data
+      document.getElementById('set-business-name').value = settings.businessName || '';
+      document.getElementById('set-business-ruc').value = settings.businessRuc || '';
+      document.getElementById('set-tax-rate').value = settings.taxRate || 18;
+      document.getElementById('set-api-url').value = settings.apiUrl || '';
+      
+      // Load Payment Settings
+      document.getElementById('set-yape').value = settings.yapePhone || '';
+      document.getElementById('set-plin').value = settings.plinPhone || '';
+      document.getElementById('set-mp-pub').value = settings.mpPublicKey || '';
+      document.getElementById('set-mp-acc').value = settings.mpAccessToken || '';
+
+      const maintenanceToggle = document.getElementById('set-maintenance-toggle');
+      maintenanceToggle.checked = settings.maintenanceMode;
+
+      maintenanceToggle.addEventListener('change', (e) => {
+        ApiService.saveSettings({ maintenanceMode: e.target.checked });
+        window.showToast(e.target.checked ? 'Modo Mantenimiento Activado' : 'Tienda en línea nuevamente', e.target.checked ? 'warning' : 'success');
+      });
+
+      window.saveDynamicPages = () => {
+        ApiService.saveSettings({
+          aboutTitle: document.getElementById('set-about-title').value,
+          aboutText: document.getElementById('set-about-text').value,
+          contactEmail: document.getElementById('set-contact-email').value,
+          contactPhone: document.getElementById('set-contact-phone').value,
+          contactAddress: document.getElementById('set-contact-address').value
+        });
+        window.showToast('Contenido guardado exitosamente', 'success');
+      };
+
+      window.saveSettingsData = () => {
+        ApiService.saveSettings({
+          businessName: document.getElementById('set-business-name').value,
+          businessRuc: document.getElementById('set-business-ruc').value,
+          taxRate: document.getElementById('set-tax-rate').value,
+          apiUrl: document.getElementById('set-api-url').value,
+          yapePhone: document.getElementById('set-yape').value,
+          plinPhone: document.getElementById('set-plin').value,
+          mpPublicKey: document.getElementById('set-mp-pub').value,
+          mpAccessToken: document.getElementById('set-mp-acc').value
+        });
+        window.showToast('Configuración guardada exitosamente', 'success');
+      };
+
+      // --- COLOR THEME INIT ---
+      document.querySelectorAll('.admin-color-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const color = e.target.dataset.color;
+          document.body.classList.remove('theme-indigo', 'theme-rose', 'theme-emerald', 'theme-amber');
+          if (color !== 'indigo') document.body.classList.add(`theme-${color}`);
+          localStorage.setItem('themeColor', color);
+          window.showToast(`Color actualizado a ${color}`, 'success');
+        });
+      });
+
+      // --- LOGOUT LOGIC ---
+      window.logout = () => {
+        AuthService.logout();
+      };
+
+      // --- BACKUP LOGIC ---
+      window.exportBackup = () => {
+        try {
+          const backupData = {};
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            backupData[key] = localStorage.getItem(key);
+          }
+          
+          const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData, null, 2));
+          const downloadAnchorNode = document.createElement('a');
+          downloadAnchorNode.setAttribute("href", dataStr);
+          const date = new Date().toISOString().split('T')[0];
+          downloadAnchorNode.setAttribute("download", `trendstore_backup_${date}.json`);
+          
+          document.body.appendChild(downloadAnchorNode);
+          downloadAnchorNode.click();
+          downloadAnchorNode.remove();
+          
+          window.showToast('Backup descargado exitosamente', 'success');
+        } catch (error) {
+          window.showToast('Error al generar el backup', 'error');
+        }
+      };
+
+      window.importBackup = (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            const backupData = JSON.parse(e.target.result);
+            for (const key in backupData) {
+              localStorage.setItem(key, backupData[key]);
+            }
+            window.showToast('Backup restaurado exitosamente. Recargando...', 'success');
+            setTimeout(() => { window.location.reload(); }, 1500);
+          } catch (err) {
+            window.showToast('Archivo de backup inválido o corrupto', 'error');
+          }
+        };
+        reader.readAsText(file);
+      };
+
+    });
+  </script>
+</body>
+</html>

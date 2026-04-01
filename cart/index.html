@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Carrito | TrendStore</title>
+  <link rel="stylesheet" href="/assets/css/style.css">
+  <style>
+    .cart-container { display: grid; grid-template-columns: 2fr 1fr; gap: 30px; margin-top: 20px; }
+    .cart-items { background: var(--card-background); border-radius: var(--border-radius); padding: 20px; box-shadow: var(--box-shadow); border: 1px solid var(--border-color); }
+    .cart-item { display: flex; align-items: center; gap: 15px; padding: 15px 0; border-bottom: 1px solid var(--border-color); }
+    .cart-item:last-child { border-bottom: none; }
+    .cart-item img { width: 80px; height: 80px; object-fit: contain; border-radius: 8px; background: var(--background-color); padding: 5px; }
+    .item-details { flex-grow: 1; }
+    .item-variant { font-size: 0.85rem; color: var(--text-light); display: flex; gap: 10px; margin-top: 4px; }
+    .item-actions { display: flex; align-items: center; gap: 10px; }
+    .qty-input { width: 50px; padding: 5px; text-align: center; border: 1px solid var(--border-color); border-radius: 5px; background: var(--background-color); color: var(--text-color); }
+    .btn-remove { background: none; border: none; color: var(--error-color); cursor: pointer; font-size: 1.2rem; }
+    .cart-summary { background: var(--card-background); border-radius: var(--border-radius); padding: 20px; box-shadow: var(--box-shadow); height: fit-content; border: 1px solid var(--border-color); }
+    .summary-row { display: flex; justify-content: space-between; margin-bottom: 15px; font-size: 1.1rem; }
+    .summary-total { font-size: 1.5rem; font-weight: bold; color: var(--primary-color); border-top: 2px solid var(--border-color); padding-top: 15px; }
+    @media (max-width: 768px) { .cart-container { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div id="header-container"></div>
+
+  <main class="container py-2">
+    <h1 style="font-size: 2rem; font-weight: 800;">Tu Carrito</h1>
+    <div id="cart-content" class="cart-container"></div>
+  </main>
+
+  <div id="footer-container"></div>
+
+  <script type="module">
+    import { renderHeader } from '/components/header.js';
+    import { renderFooter } from '/components/footer.js';
+    import { CartService } from '/services/cart.js';
+    import '/assets/js/main.js';
+
+    document.addEventListener('DOMContentLoaded', () => {
+      renderHeader();
+      renderFooter();
+      renderCart();
+    });
+
+    function renderCart() {
+      const container = document.getElementById('cart-content');
+      const cart = CartService.getCart();
+
+      if (cart.length === 0) {
+        container.innerHTML = `
+          <div style="grid-column: 1/-1; text-align: center; padding: 50px; background: var(--card-background); border-radius: var(--border-radius); border: 1px solid var(--border-color);">
+            <h2>Tu carrito está vacío</h2>
+            <p style="margin: 20px 0; color: var(--text-light);">Parece que aún no has agregado nada.</p>
+            <a href="/categories/" class="btn btn-primary">Ir al Catálogo</a>
+          </div>
+        `;
+        return;
+      }
+
+      let itemsHtml = '<div class="cart-items">';
+      cart.forEach(item => {
+        let variantHtml = '';
+        if(item.selectedSize) variantHtml += `<span>Talla: <b>${item.selectedSize}</b></span>`;
+        if(item.selectedColor) variantHtml += `<span>Color: <b>${item.selectedColor.name}</b></span>`;
+
+        itemsHtml += `
+          <div class="cart-item">
+            <img src="${item.image}" alt="${item.name}">
+            <div class="item-details">
+              <h4 style="font-size: 1.1rem;">${item.name}</h4>
+              ${variantHtml ? `<div class="item-variant">${variantHtml}</div>` : ''}
+              <p style="color: var(--primary-color); font-weight: bold; margin-top: 5px;">${window.formatPrice(item.price)}</p>
+            </div>
+            <div class="item-actions">
+              <input type="number" class="qty-input" data-id="${item.cartItemId}" value="${item.quantity}" min="1" max="${item.stock}">
+              <button class="btn-remove" data-id="${item.cartItemId}">🗑️</button>
+            </div>
+          </div>
+        `;
+      });
+      itemsHtml += '</div>';
+
+      const total = CartService.getTotal();
+      const summaryHtml = `
+        <div class="cart-summary">
+          <h3 style="margin-bottom: 20px;">Resumen de Orden</h3>
+          <div class="summary-row mt-2">
+            <span>Subtotal</span>
+            <span>${window.formatPrice(total)}</span>
+          </div>
+          <div class="summary-row summary-total">
+            <span>Total</span>
+            <span>${window.formatPrice(total)}</span>
+          </div>
+          <a href="/checkout/" class="btn btn-primary" style="width: 100%; margin-top: 20px; font-size: 1.1rem; padding: 15px;">
+            Proceder al Pago
+          </a>
+        </div>
+      `;
+
+      container.innerHTML = itemsHtml + summaryHtml;
+
+      document.querySelectorAll('.qty-input').forEach(input => {
+        input.addEventListener('change', (e) => {
+          CartService.updateQuantity(e.target.dataset.id, e.target.value);
+          renderCart();
+        });
+      });
+
+      document.querySelectorAll('.btn-remove').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          CartService.removeItem(e.currentTarget.dataset.id);
+          window.showToast('Producto eliminado', 'warning');
+          renderCart();
+        });
+      });
+    }
+  </script>
+</body>
+</html>
