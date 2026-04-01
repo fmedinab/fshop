@@ -37,6 +37,12 @@
     import { renderHeader } from '../components/header.js';
     import { renderFooter } from '../components/footer.js';
     import { ApiService } from '../services/api.js';
+    
+    window.ApiService = ApiService;
+    const script = document.createElement('script');
+    script.src = '../assets/js/main.js';
+    script.type = 'module';
+    document.body.appendChild(script);
     import '/assets/js/main.js';
 
     let allProducts = [];

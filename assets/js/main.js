@@ -1,23 +1,22 @@
-import { ApiService } from '../services/api.js';
-import { AuthService } from '../services/auth.js';
-import { FavoritesService } from '../services/favorites.js';
+// ⚠️ Los servicios son importados desde index.html y disponibles globalmente
+// No importar aquí para evitar conflictos de rutas
 
 // Exponer servicios globalmente para uso en HTML
-window.FavoritesService = FavoritesService;
-window.AuthService = AuthService;
-
+// (ya deberían estar disponibles desde el HTML que los importó)
 window.logoutClient = () => {
-  AuthService.logout();
+  if(window.AuthService) window.AuthService.logout();
 };
 
 window.loginClient = () => {
-  AuthService.loginAsClient();
+  if(window.AuthService) window.AuthService.loginAsClient();
 };
 
 window.toggleFav = (e, productId) => {
   e.preventDefault();
   e.stopPropagation();
-  const isFav = FavoritesService.toggleFavorite(productId);
+  if(!window.FavoritesService) return;
+  
+  const isFav = window.FavoritesService.toggleFavorite(productId);
   const btn = e.currentTarget;
   
   if (isFav) {
@@ -31,22 +30,24 @@ window.toggleFav = (e, productId) => {
   }
   
   // Si estamos en la página de favoritos, recargar la vista
-  if (window.location.pathname.includes('/account/') && document.getElementById('tab-favorites').classList.contains('active')) {
+  if (window.location.pathname.includes('/account/') && document.getElementById('tab-favorites')?.classList.contains('active')) {
     if (typeof window.renderFavorites === 'function') window.renderFavorites();
   }
 };
 
 // --- CONTROL DE MODO MANTENIMIENTO ---
-const settings = ApiService.getSettings();
-const currentPath = window.location.pathname;
-const baseUrl = window.BASE_URL || '';
-const isAdmin = currentPath.includes('/admin');
-const isMaintenancePage = currentPath.includes('/maintenance');
+if(window.ApiService) {
+  const settings = window.ApiService.getSettings();
+  const currentPath = window.location.pathname;
+  const baseUrl = window.BASE_URL || '';
+  const isAdmin = currentPath.includes('/admin');
+  const isMaintenancePage = currentPath.includes('/maintenance');
 
-if (settings.maintenanceMode && !isAdmin && !isMaintenancePage) {
-  window.location.href = baseUrl + '/maintenance/';
-} else if (!settings.maintenanceMode && isMaintenancePage) {
-  window.location.href = baseUrl + '/';
+  if (settings.maintenanceMode && !isAdmin && !isMaintenancePage) {
+    window.location.href = baseUrl + '/maintenance/';
+  } else if (!settings.maintenanceMode && isMaintenancePage) {
+    window.location.href = baseUrl + '/';
+  }
 }
 
 // Global utilities
@@ -89,6 +90,7 @@ window.generateProductCardHTML = function(product) {
   const mainImage = product.images && product.images.length > 0 ? product.images[0] : product.image;
   const hasSale = product.originalPrice && product.originalPrice > product.price;
   const isFav = window.FavoritesService ? window.FavoritesService.isFavorite(product.id) : false;
+  const baseUrl = window.BASE_URL || '';
   
   let stockHtml = '';
   if(product.stock > 10) stockHtml = `<span class="product-stock">🟢 Disponible</span>`;
@@ -104,7 +106,7 @@ window.generateProductCardHTML = function(product) {
         <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="${isFav ? 'currentColor' : 'none'}" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
       </button>
 
-      <a href="/product/?id=${product.id}" class="product-img-container">
+      <a href="${baseUrl}/product/?id=${product.id}" class="product-img-container">
         <img src="${mainImage}" alt="${product.name}" class="product-img" loading="lazy">
       </a>
       <div class="product-info">
@@ -115,7 +117,7 @@ window.generateProductCardHTML = function(product) {
             ${hasSale ? `<span class="price-original">${window.formatPrice(product.originalPrice)}</span>` : ''}
             <span class="product-price ${hasSale ? 'sale' : ''}">${window.formatPrice(product.price)}</span>
           </div>
-          <a href="/product/?id=${product.id}" class="btn btn-outline btn-sm" style="border-radius: 8px;">
+          <a href="${baseUrl}/product/?id=${product.id}" class="btn btn-outline btn-sm" style="border-radius: 8px;">
             Ver Detalles
           </a>
         </div>

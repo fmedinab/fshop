@@ -400,10 +400,18 @@
     </div>
   </div>
 
+  <script src="../assets/js/base-path.js"></script>
   <script type="module">
-    import { ApiService } from '/services/api.js';
-    import { AuthService } from '/services/auth.js';
-    import '/assets/js/main.js';
+    import { ApiService } from '../services/api.js';
+    import { AuthService } from '../services/auth.js';
+    
+    window.ApiService = ApiService;
+    window.AuthService = AuthService;
+    
+    const script = document.createElement('script');
+    script.src = '../assets/js/main.js';
+    script.type = 'module';
+    document.body.appendChild(script);
 
     document.addEventListener('DOMContentLoaded', async () => {
       
@@ -569,14 +577,14 @@
       // --- LOAD DATA ---
       try {
         const [products, categories, orders, sliders, coupons, users, notifications, stats] = await Promise.all([
-          ApiService.getProducts(),
-          ApiService.getCategories(),
-          ApiService.getOrders(),
-          ApiService.getSliders(),
-          ApiService.getCoupons(),
-          ApiService.getUsers(),
-          ApiService.getNotifications(),
-          ApiService.getDashboardStats()
+          window.ApiService.getProducts(),
+          window.ApiService.getCategories(),
+          window.ApiService.getOrders(),
+          window.ApiService.getSliders(),
+          window.ApiService.getCoupons(),
+          window.ApiService.getUsers(),
+          window.ApiService.getNotifications(),
+          window.ApiService.getDashboardStats()
         ]);
 
         // 1. Dashboard
@@ -722,7 +730,7 @@
       }
 
       // --- SETTINGS & PAGES LOGIC ---
-      const settings = ApiService.getSettings();
+      const settings = window.ApiService.getSettings();
       
       // Load Pages Data
       document.getElementById('set-about-title').value = settings.aboutTitle;
@@ -747,12 +755,12 @@
       maintenanceToggle.checked = settings.maintenanceMode;
 
       maintenanceToggle.addEventListener('change', (e) => {
-        ApiService.saveSettings({ maintenanceMode: e.target.checked });
+        window.ApiService.saveSettings({ maintenanceMode: e.target.checked });
         window.showToast(e.target.checked ? 'Modo Mantenimiento Activado' : 'Tienda en línea nuevamente', e.target.checked ? 'warning' : 'success');
       });
 
       window.saveDynamicPages = () => {
-        ApiService.saveSettings({
+        window.ApiService.saveSettings({
           aboutTitle: document.getElementById('set-about-title').value,
           aboutText: document.getElementById('set-about-text').value,
           contactEmail: document.getElementById('set-contact-email').value,
@@ -763,7 +771,7 @@
       };
 
       window.saveSettingsData = () => {
-        ApiService.saveSettings({
+        window.ApiService.saveSettings({
           businessName: document.getElementById('set-business-name').value,
           businessRuc: document.getElementById('set-business-ruc').value,
           taxRate: document.getElementById('set-tax-rate').value,
@@ -789,7 +797,7 @@
 
       // --- LOGOUT LOGIC ---
       window.logout = () => {
-        AuthService.logout();
+        window.AuthService.logout();
       };
 
       // --- BACKUP LOGIC ---

@@ -27,9 +27,10 @@
   <script src="../assets/js/base-path.js"></script>
   <script type="module">
     import { ApiService } from '../services/api.js';
+    window.ApiService = ApiService;
     // Si el mantenimiento se desactiva, redirigir automáticamente al inicio
     setInterval(() => {
-      const settings = ApiService.getSettings();
+      const settings = window.ApiService.getSettings();
       if (!settings.maintenanceMode) {
         window.location.href = '../';
       }
