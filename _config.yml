@@ -1,0 +1,8 @@
+# GitHub Pages Configuration
+baseurl: /fshop
+markdown: kramdown
+exclude:
+  - node_modules
+  - .gitignore
+  - README.md
+  - DEPLOYMENT_GUIDE.md
