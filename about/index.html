@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sobre Nosotros | TrendStore</title>
-  <link rel="stylesheet" href="/assets/css/style.css">
+  <link rel="stylesheet" href="../assets/css/style.css">
   <style>
     .page-header { background: var(--primary-color); color: white; padding: 60px 20px; text-align: center; border-radius: var(--border-radius); margin-top: 20px; }
     .page-content { background: var(--card-background); padding: 40px; border-radius: var(--border-radius); box-shadow: var(--box-shadow); border: 1px solid var(--border-color); margin-top: -30px; position: relative; z-index: 10; line-height: 1.8; font-size: 1.1rem; color: var(--text-color); white-space: pre-line; }
@@ -25,11 +25,12 @@
 
   <div id="footer-container"></div>
 
+  <script src="../assets/js/base-path.js"></script>
   <script type="module">
-    import { renderHeader } from '/components/header.js';
-    import { renderFooter } from '/components/footer.js';
-    import { ApiService } from '/services/api.js';
-    import '/assets/js/main.js';
+    import { renderHeader } from '../components/header.js';
+    import { renderFooter } from '../components/footer.js';
+    import { ApiService } from '../services/api.js';
+    import '../assets/js/main.js';
 
     document.addEventListener('DOMContentLoaded', () => {
       renderHeader();

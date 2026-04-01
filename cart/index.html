@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Carrito | TrendStore</title>
-  <link rel="stylesheet" href="/assets/css/style.css">
+  <link rel="stylesheet" href="../assets/css/style.css">
   <style>
     .cart-container { display: grid; grid-template-columns: 2fr 1fr; gap: 30px; margin-top: 20px; }
     .cart-items { background: var(--card-background); border-radius: var(--border-radius); padding: 20px; box-shadow: var(--box-shadow); border: 1px solid var(--border-color); }
@@ -32,10 +32,11 @@
 
   <div id="footer-container"></div>
 
+  <script src="../assets/js/base-path.js"></script>
   <script type="module">
-    import { renderHeader } from '/components/header.js';
-    import { renderFooter } from '/components/footer.js';
-    import { CartService } from '/services/cart.js';
+    import { renderHeader } from '../components/header.js';
+    import { renderFooter } from '../components/footer.js';
+    import { CartService } from '../services/cart.js';
     import '/assets/js/main.js';
 
     document.addEventListener('DOMContentLoaded', () => {

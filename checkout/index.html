@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Checkout | TrendStore</title>
-  <link rel="stylesheet" href="/assets/css/style.css">
+  <link rel="stylesheet" href="../assets/css/style.css">
   <style>
     .checkout-container { display: grid; grid-template-columns: 1.5fr 1fr; gap: 40px; margin-top: 20px; }
     .checkout-form { background: var(--card-background); padding: 40px; border-radius: var(--border-radius); box-shadow: var(--box-shadow); border: 1px solid var(--border-color); }
@@ -68,11 +68,12 @@
 
   <div id="footer-container"></div>
 
+  <script src="../assets/js/base-path.js"></script>
   <script type="module">
-    import { renderHeader } from '/components/header.js';
-    import { renderFooter } from '/components/footer.js';
-    import { CartService } from '/services/cart.js';
-    import { ApiService } from '/services/api.js';
+    import { renderHeader } from '../components/header.js';
+    import { renderFooter } from '../components/footer.js';
+    import { CartService } from '../services/cart.js';
+    import { ApiService } from '../services/api.js';
     import '/assets/js/main.js';
 
     document.addEventListener('DOMContentLoaded', () => {

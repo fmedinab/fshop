@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Catálogo | TrendStore</title>
-  <link rel="stylesheet" href="/assets/css/style.css">
+  <link rel="stylesheet" href="../assets/css/style.css">
   <style>
     .category-filters { display: flex; gap: 12px; margin-bottom: 40px; flex-wrap: wrap; justify-content: center; }
     .filter-btn { padding: 8px 20px; border-radius: 20px; font-weight: 600; font-size: 0.95rem; border: 1px solid var(--border-color); background: var(--card-background); color: var(--text-color); transition: var(--transition); cursor: pointer; }
@@ -32,10 +32,11 @@
 
   <div id="footer-container"></div>
 
+  <script src="../assets/js/base-path.js"></script>
   <script type="module">
-    import { renderHeader } from '/components/header.js';
-    import { renderFooter } from '/components/footer.js';
-    import { ApiService } from '/services/api.js';
+    import { renderHeader } from '../components/header.js';
+    import { renderFooter } from '../components/footer.js';
+    import { ApiService } from '../services/api.js';
     import '/assets/js/main.js';
 
     let allProducts = [];

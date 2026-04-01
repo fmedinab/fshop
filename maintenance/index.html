@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mantenimiento | TrendStore</title>
-  <link rel="stylesheet" href="/assets/css/style.css">
+  <link rel="stylesheet" href="../assets/css/style.css">
   <style>
     body { display: flex; align-items: center; justify-content: center; min-height: 100vh; background-color: var(--background-color); margin: 0; }
     .maintenance-container { text-align: center; background: var(--card-background); padding: 60px 40px; border-radius: var(--border-radius); box-shadow: var(--box-shadow); border: 1px solid var(--border-color); max-width: 600px; width: 90%; }
@@ -20,17 +20,18 @@
     <h1>Volvemos Pronto</h1>
     <p>Nuestra tienda está actualmente en mantenimiento para traerte una mejor experiencia y nuevas ofertas. Estaremos en línea nuevamente en breve.</p>
     <div style="display: flex; justify-content: center; gap: 15px;">
-      <a href="/admin/" class="btn btn-outline">Acceso Admin</a>
+      <a href="../admin/" class="btn btn-outline">Acceso Admin</a>
     </div>
   </div>
   
+  <script src="../assets/js/base-path.js"></script>
   <script type="module">
-    import { ApiService } from '/services/api.js';
+    import { ApiService } from '../services/api.js';
     // Si el mantenimiento se desactiva, redirigir automáticamente al inicio
     setInterval(() => {
       const settings = ApiService.getSettings();
       if (!settings.maintenanceMode) {
-        window.location.href = '/';
+        window.location.href = '../';
       }
     }, 5000);
   </script>

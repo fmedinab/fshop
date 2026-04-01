@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Inicio | TrendStore</title>
-  <link rel="stylesheet" href="/assets/css/style.css">
+  <link rel="stylesheet" href="./assets/css/style.css">
 </head>
 <body>
   <div id="header-container"></div>
@@ -47,12 +47,13 @@
 
   <div id="footer-container"></div>
 
+  <script src="./assets/js/base-path.js"></script>
   <script type="module">
-    import { renderHeader } from '/components/header.js';
-    import { renderFooter } from '/components/footer.js';
-    import { ApiService } from '/services/api.js';
-    import { AuthService } from '/services/auth.js';
-    import '/assets/js/main.js';
+    import { renderHeader } from './components/header.js';
+    import { renderFooter } from './components/footer.js';
+    import { ApiService } from './services/api.js';
+    import { AuthService } from './services/auth.js';
+    import './assets/js/main.js';
 
     document.addEventListener('DOMContentLoaded', async () => {
       renderHeader();

@@ -1,6 +1,6 @@
-import { ApiService } from '/services/api.js';
-import { AuthService } from '/services/auth.js';
-import { FavoritesService } from '/services/favorites.js';
+import { ApiService } from '../services/api.js';
+import { AuthService } from '../services/auth.js';
+import { FavoritesService } from '../services/favorites.js';
 
 // Exponer servicios globalmente para uso en HTML
 window.FavoritesService = FavoritesService;
@@ -39,13 +39,14 @@ window.toggleFav = (e, productId) => {
 // --- CONTROL DE MODO MANTENIMIENTO ---
 const settings = ApiService.getSettings();
 const currentPath = window.location.pathname;
+const baseUrl = window.BASE_URL || '';
 const isAdmin = currentPath.includes('/admin');
 const isMaintenancePage = currentPath.includes('/maintenance');
 
 if (settings.maintenanceMode && !isAdmin && !isMaintenancePage) {
-  window.location.href = '/maintenance/';
+  window.location.href = baseUrl + '/maintenance/';
 } else if (!settings.maintenanceMode && isMaintenancePage) {
-  window.location.href = '/';
+  window.location.href = baseUrl + '/';
 }
 
 // Global utilities
