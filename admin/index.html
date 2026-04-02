@@ -353,17 +353,17 @@
           <!-- Datos del Perfil -->
           <div class="table-container" style="padding: 20px;">
             <h3 style="margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">Datos del Perfil</h3>
-            <div class="form-group"><label>Nombre Completo</label><input type="text" class="form-control" value="Admin Principal"></div>
-            <div class="form-group"><label>Correo Electrónico</label><input type="email" class="form-control" value="admin@trendstore.com"></div>
-            <button class="btn btn-primary" onclick="window.showToast('Perfil actualizado correctamente', 'success')">Actualizar Perfil</button>
+            <div class="form-group"><label>Nombre Completo</label><input type="text" id="admin-profile-name" class="form-control" value=""></div>
+            <div class="form-group"><label>Correo Electrónico</label><input type="email" id="admin-profile-email" class="form-control" value="" readonly style="background: rgba(0,0,0,0.05);"></div>
+            <button class="btn btn-primary" onclick="window.updateAdminProfile()">Actualizar Perfil</button>
           </div>
 
           <!-- Seguridad -->
           <div class="table-container" style="padding: 20px;">
             <h3 style="margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">Seguridad</h3>
-            <div class="form-group"><label>Contraseña Actual</label><input type="password" class="form-control" placeholder="••••••••"></div>
-            <div class="form-group"><label>Nueva Contraseña</label><input type="password" class="form-control" placeholder="••••••••"></div>
-            <button class="btn btn-primary" onclick="window.showToast('Contraseña cambiada exitosamente', 'success')">Cambiar Contraseña</button>
+            <div class="form-group"><label>Contraseña Actual</label><input type="password" id="admin-sec-current" class="form-control" placeholder="••••••••"></div>
+            <div class="form-group"><label>Nueva Contraseña</label><input type="password" id="admin-sec-new" class="form-control" placeholder="••••••••"></div>
+            <button class="btn btn-primary" onclick="window.updateAdminPassword()">Cambiar Contraseña</button>
           </div>
 
           <!-- Copias de Seguridad (Backup) -->
@@ -408,6 +408,11 @@
     window.ApiService = ApiService;
     window.AuthService = AuthService;
     
+    // --- RUTINA DE PROTECCIÓN DE ADMIN ---
+    if (!window.AuthService.isAdmin()) {
+      window.location.href = window.BASE_URL + '/login/';
+    }
+
     const script = document.createElement('script');
     script.src = '../assets/js/main.js';
     script.type = 'module';
@@ -415,6 +420,33 @@
 
     document.addEventListener('DOMContentLoaded', async () => {
       
+      // Load user dynamic data
+      const adminUser = AuthService.getUser();
+      if (adminUser) {
+        document.getElementById('admin-profile-name').value = adminUser.name || '';
+        document.getElementById('admin-profile-email').value = adminUser.email || '';
+      }
+
+      // Populate config if exists
+      try {
+        const configData = await ApiService.request('config');
+        if (configData && configData.length > 0) {
+            const configMap = {};
+            configData.forEach(c => configMap[c.key] = c.value);
+            
+            document.getElementById('set-business-name').value = configMap.storeName || '';
+            document.getElementById('set-business-ruc').value = configMap.storeRuc || '';
+            document.getElementById('set-tax-rate').value = configMap.taxRate || '';
+            document.getElementById('set-yape').value = configMap.yape || '';
+            document.getElementById('set-plin').value = configMap.plin || '';
+            document.getElementById('set-mp-pub').value = configMap.mpPublic || '';
+            document.getElementById('set-mp-acc').value = configMap.mpAccess || '';
+            document.getElementById('set-maintenance-toggle').checked = configMap.maintenance === 'true';
+        }
+      } catch (e) {
+          console.warn('No se pudo cargar la configuración', e);
+      }
+
       // --- DARK MODE LOGIC ---
       const themeToggle = document.getElementById('admin-theme-toggle');
       const savedMode = localStorage.getItem('darkMode');
@@ -529,11 +561,15 @@
 
       window.openCategoryModal = (c = null) => {
         const html = `
-          <div class="form-group"><label>ID de Categoría (ej: tech)</label><input type="text" class="form-control" value="${c ? c.id : ''}" ${c ? 'disabled' : ''}></div>
-          <div class="form-group"><label>Nombre Público (ej: 💻 Tecnología)</label><input type="text" class="form-control" value="${c ? c.name : ''}"></div>
-          <div class="form-group"><label>Estado</label><select class="form-control"><option>Activo</option><option>Inactivo</option></select></div>
+          ${c ? `<div class="form-group"><label>ID de Categoría</label><input type="text" class="form-control" value="${c.id}" disabled></div>` : ''}
+          <div class="form-group"><label>Nombre Público (ej: 💻 Tecnología)</label><input type="text" id="cat-name" class="form-control" value="${c ? c.name : ''}" placeholder="ej: Moda, Tecnología, Electrónica"></div>
+          <div class="form-group"><label>Estado</label><select id="cat-status" class="form-control"><option ${c && c.status === 'Activo' ? 'selected' : ''}>Activo</option><option ${c && c.status === 'Inactivo' ? 'selected' : ''}>Inactivo</option></select></div>
         `;
         window.openModal(c ? 'Editar Categoría' : 'Nueva Categoría', html);
+        
+        // Cambiar botón de guardar
+        const saveBtn = document.querySelector('.modal-content .btn-primary');
+        if (saveBtn) saveBtn.onclick = () => window.saveCategoryData(c ? c.id : null);
       };
 
       window.openSliderModal = (s = null) => {
@@ -576,21 +612,26 @@
 
       // --- LOAD DATA ---
       try {
+        const adminKey = sessionStorage.getItem('adminKey') || '';
         const [products, categories, orders, sliders, coupons, users, notifications, stats] = await Promise.all([
           window.ApiService.getProducts(),
           window.ApiService.getCategories(),
           window.ApiService.getOrders(),
           window.ApiService.getSliders(),
           window.ApiService.getCoupons(),
-          window.ApiService.getUsers(),
-          window.ApiService.getNotifications(),
-          window.ApiService.getDashboardStats()
+          window.ApiService.getUsers(adminKey),
+          window.ApiService.getNotifications(adminKey),
+          window.ApiService.getDashboardStats(adminKey)
         ]);
 
         // 1. Dashboard
-        document.getElementById('dash-sales').textContent = window.formatPrice(stats.totalSales);
-        document.getElementById('dash-orders').textContent = stats.totalOrders;
-        document.getElementById('dash-users').textContent = stats.activeUsers;
+        if (stats && !stats.error) {
+          document.getElementById('dash-sales').textContent = window.formatPrice(stats.totalSales || 0);
+          document.getElementById('dash-orders').textContent = stats.totalOrders || 0;
+          document.getElementById('dash-users').textContent = stats.activeUsers || 0;
+        } else {
+           document.getElementById('dash-sales').textContent = 'S/ 0.00';
+        }
 
         // 2. Products
         window.mockProductsData = products;
@@ -613,8 +654,11 @@
           <tr>
             <td>${c.id}</td>
             <td><strong>${c.name}</strong></td>
-            <td><span class="badge badge-success">Activo</span></td>
-            <td><button class="btn btn-outline btn-sm" onclick="window.openCategoryModal(window.mockCategoriesData[${i}])">✏️</button></td>
+            <td><span class="badge badge-success">${c.status || 'Activo'}</span></td>
+            <td>
+              <button class="btn btn-outline btn-sm" onclick="window.openCategoryModal(window.mockCategoriesData[${i}])">✏️</button>
+              <button class="btn btn-danger btn-sm" onclick="window.deleteCategoryData('${c.id}')">🗑️</button>
+            </td>
           </tr>
         `).join('');
 
@@ -634,19 +678,23 @@
         `).join('');
 
         // 5. Users
-        document.getElementById('users-body').innerHTML = users.map(u => `
-          <tr>
-            <td>${u.id}</td>
-            <td><strong>${u.name}</strong></td>
-            <td>${u.email}</td>
-            <td><span class="badge ${u.role === 'Admin' ? 'badge-primary' : 'badge-neutral'}">${u.role}</span></td>
-            <td>${u.registered}</td>
-            <td><span class="badge badge-success">${u.status}</span></td>
-            <td>
-              <button class="btn btn-outline btn-sm" onclick="window.showToast('Editando usuario', 'success')">✏️</button>
-            </td>
-          </tr>
-        `).join('');
+        if (Array.isArray(users)) {
+          document.getElementById('users-body').innerHTML = users.map(u => `
+            <tr>
+              <td>${u.id}</td>
+              <td><strong>${u.name}</strong></td>
+              <td>${u.email}</td>
+              <td><span class="badge ${u.role === 'Admin' || u.role === 'admin' ? 'badge-primary' : 'badge-neutral'}">${u.role}</span></td>
+              <td>${u.registered}</td>
+              <td><span class="badge badge-success">${u.status}</span></td>
+              <td>
+                <button class="btn btn-outline btn-sm" onclick="window.showToast('Editando usuario', 'success')">✏️</button>
+              </td>
+            </tr>
+          `).join('');
+        } else {
+          document.getElementById('users-body').innerHTML = `<tr><td colspan="7" style="text-align:center;">Acceso denegado o error al cargar</td></tr>`;
+        }
 
         // 6. Promotions
         window.mockSlidersData = sliders;
@@ -683,47 +731,51 @@
         `).join('');
 
         // 8. Reports Enhancements
-        document.getElementById('reports-top-products').innerHTML = stats.topProducts.map(p => `
-          <tr>
-            <td><strong>${p.name}</strong></td>
-            <td>${p.sales} und.</td>
-            <td style="color: var(--primary-color); font-weight: bold;">${window.formatPrice(p.revenue)}</td>
-          </tr>
-        `).join('');
+        if (stats && !stats.error) {
+          document.getElementById('reports-top-products').innerHTML = stats.topProducts.map(p => `
+            <tr>
+              <td><strong>${p.name}</strong></td>
+              <td>${p.sales} und.</td>
+              <td style="color: var(--primary-color); font-weight: bold;">${window.formatPrice(p.revenue)}</td>
+            </tr>
+          `).join('');
 
-        document.getElementById('reports-payment-methods').innerHTML = `
-          <div class="progress-group">
-            <div class="progress-header"><span>Mercado Pago</span><span>${stats.paymentMethods.mercadopago}%</span></div>
-            <div class="progress-bar-bg"><div class="progress-bar-fill" style="width: ${stats.paymentMethods.mercadopago}%; background: #009ee3;"></div></div>
-          </div>
-          <div class="progress-group">
-            <div class="progress-header"><span>Yape</span><span>${stats.paymentMethods.yape}%</span></div>
-            <div class="progress-bar-bg"><div class="progress-bar-fill" style="width: ${stats.paymentMethods.yape}%; background: #742284;"></div></div>
-          </div>
-          <div class="progress-group">
-            <div class="progress-header"><span>Plin</span><span>${stats.paymentMethods.plin}%</span></div>
-            <div class="progress-bar-bg"><div class="progress-bar-fill" style="width: ${stats.paymentMethods.plin}%; background: #00d2b6;"></div></div>
-          </div>
-        `;
+          document.getElementById('reports-payment-methods').innerHTML = `
+            <div class="progress-group">
+              <div class="progress-header"><span>Mercado Pago</span><span>${stats.paymentMethods.mercadopago}%</span></div>
+              <div class="progress-bar-bg"><div class="progress-bar-fill" style="width: ${stats.paymentMethods.mercadopago}%; background: #009ee3;"></div></div>
+            </div>
+            <div class="progress-group">
+              <div class="progress-header"><span>Yape</span><span>${stats.paymentMethods.yape}%</span></div>
+              <div class="progress-bar-bg"><div class="progress-bar-fill" style="width: ${stats.paymentMethods.yape}%; background: #742284;"></div></div>
+            </div>
+            <div class="progress-group">
+              <div class="progress-header"><span>Plin</span><span>${stats.paymentMethods.plin}%</span></div>
+              <div class="progress-bar-bg"><div class="progress-bar-fill" style="width: ${stats.paymentMethods.plin}%; background: #00d2b6;"></div></div>
+            </div>
+          `;
+        }
 
         // 9. Notifications
-        document.getElementById('notifications-list').innerHTML = notifications.map(n => {
-          let icon = '🔔';
-          if(n.type === 'order') icon = '📦';
-          if(n.type === 'alert') icon = '⚠️';
-          if(n.type === 'payment') icon = '💰';
-          
-          return `
-          <div class="notif-page-item ${!n.read ? 'unread' : ''}">
-            <div class="notif-page-icon">${icon}</div>
-            <div style="flex-grow: 1;">
-              <h4 style="font-size: 1.1rem; margin-bottom: 5px; color: var(--text-color);">${n.title}</h4>
-              <p style="color: var(--text-light); margin-bottom: 5px;">${n.message}</p>
-              <span style="font-size: 0.8rem; color: var(--primary-color); font-weight: bold;">${n.date}</span>
+        if (Array.isArray(notifications)) {
+          document.getElementById('notifications-list').innerHTML = notifications.map(n => {
+            let icon = '🔔';
+            if(n.type === 'order') icon = '📦';
+            if(n.type === 'alert') icon = '⚠️';
+            if(n.type === 'payment') icon = '💰';
+            
+            return `
+            <div class="notif-page-item ${!n.read ? 'unread' : ''}">
+              <div class="notif-page-icon">${icon}</div>
+              <div style="flex-grow: 1;">
+                <h4 style="font-size: 1.1rem; margin-bottom: 5px; color: var(--text-color);">${n.title}</h4>
+                <p style="color: var(--text-light); margin-bottom: 5px;">${n.message}</p>
+                <span style="font-size: 0.8rem; color: var(--primary-color); font-weight: bold;">${n.date}</span>
+              </div>
+              ${!n.read ? `<button class="btn btn-sm btn-outline" onclick="this.parentElement.classList.remove('unread'); this.remove();">Marcar leída</button>` : ''}
             </div>
-            ${!n.read ? `<button class="btn btn-sm btn-outline" onclick="this.parentElement.classList.remove('unread'); this.remove();">Marcar leída</button>` : ''}
-          </div>
-        `}).join('');
+          `}).join('');
+        }
 
       } catch (error) {
         console.error("Error loading admin data", error);
@@ -784,6 +836,107 @@
         window.showToast('Configuración guardada exitosamente', 'success');
       };
 
+      // --- ADMIN KEY MANAGEMENT ---
+      window.getAdminKey = () => {
+        let key = localStorage.getItem('admin_key');
+        if (!key) {
+          key = prompt('Ingresa la clave de Admin para realizar cambios:');
+          if (key) localStorage.setItem('admin_key', key);
+          else return null;
+        }
+        return key;
+      };
+
+      // --- CATEGORY CRUD ---
+      window.saveCategoryData = async (existingCatId) => {
+        const adminKey = window.getAdminKey();
+        if (!adminKey) {
+          window.showToast('Clave de admin requerida', 'error');
+          return;
+        }
+
+        const catName = document.getElementById('cat-name').value.trim();
+        const catStatus = document.getElementById('cat-status').value;
+
+        if (!catName) {
+          window.showToast('Ingresa el nombre de la categoría', 'warning');
+          return;
+        }
+
+        try {
+          let result;
+          if (existingCatId) {
+            // EDIT
+            result = await window.ApiService.editCategory({
+              id: existingCatId,
+              name: catName,
+              status: catStatus
+            }, adminKey);
+          } else {
+            // CREATE - El ID se genera en el backend
+            result = await window.ApiService.createCategory({
+              name: catName,
+              status: catStatus
+            }, adminKey);
+          }
+
+          if (result.success) {
+            window.showToast(result.message || 'Categoría guardada', 'success');
+            window.closeModal();
+            // Recargar tabla
+            const updatedCategories = await window.ApiService.getCategories();
+            window.mockCategoriesData = updatedCategories;
+            document.getElementById('categories-body').innerHTML = updatedCategories.map((c, i) => `
+              <tr>
+                <td>${c.id}</td>
+                <td><strong>${c.name}</strong></td>
+                <td><span class="badge badge-success">${c.status || 'Activo'}</span></td>
+                <td><button class="btn btn-outline btn-sm" onclick="window.openCategoryModal(window.mockCategoriesData[${i}])">✏️</button>
+                <button class="btn btn-danger btn-sm" onclick="window.deleteCategoryData('${c.id}')">🗑️</button></td>
+              </tr>
+            `).join('');
+          } else {
+            window.showToast(result.error || 'Error al guardar', 'error');
+          }
+        } catch (error) {
+          console.error('Error:', error);
+          window.showToast('Error al guardar categoría: ' + error.message, 'error');
+        }
+      };
+
+      window.deleteCategoryData = async (catId) => {
+        if (!confirm('¿Eliminar esta categoría?')) return;
+
+        const adminKey = window.getAdminKey();
+        if (!adminKey) {
+          window.showToast('Clave de admin requerida', 'error');
+          return;
+        }
+
+        try {
+          const result = await window.ApiService.deleteCategory(catId, adminKey);
+          if (result.success) {
+            window.showToast('Categoría eliminada', 'success');
+            // Recargar tabla
+            const updatedCategories = await window.ApiService.getCategories();
+            window.mockCategoriesData = updatedCategories;
+            document.getElementById('categories-body').innerHTML = updatedCategories.map((c, i) => `
+              <tr>
+                <td>${c.id}</td>
+                <td><strong>${c.name}</strong></td>
+                <td><span class="badge badge-success">${c.status || 'Activo'}</span></td>
+                <td><button class="btn btn-outline btn-sm" onclick="window.openCategoryModal(window.mockCategoriesData[${i}])">✏️</button>
+                <button class="btn btn-danger btn-sm" onclick="window.deleteCategoryData('${c.id}')">🗑️</button></td>
+              </tr>
+            `).join('');
+          } else {
+            window.showToast(result.error || 'Error al eliminar', 'error');
+          }
+        } catch (error) {
+          window.showToast('Error: ' + error.message, 'error');
+        }
+      };
+
       // --- COLOR THEME INIT ---
       document.querySelectorAll('.admin-color-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -794,6 +947,96 @@
           window.showToast(`Color actualizado a ${color}`, 'success');
         });
       });
+
+      // Update Admin Profile & Password Callbacks
+      window.updateAdminProfile = async () => {
+        const name = document.getElementById('admin-profile-name').value;
+        const email = document.getElementById('admin-profile-email').value;
+        const targetBtn = event.currentTarget || event.target;
+        
+        if (!name) return window.showToast('El nombre no puede estar vacío', 'error');
+        
+        targetBtn.disabled = true;
+        targetBtn.textContent = 'Actualizando...';
+        
+        try {
+          const res = await ApiService.request('updateProfile', { email, name });
+          if(res.success) {
+            window.showToast('Perfil actualizado correctamente', 'success');
+            // Update auth store
+            const user = AuthService.getUser();
+            user.name = name;
+            localStorage.setItem('currentUser', JSON.stringify(user));
+          } else {
+            window.showToast(res.error || 'Error al actualizar', 'error');
+          }
+        } catch (e) {
+          window.showToast('Error de red al actualizar.', 'error');
+        } finally {
+          targetBtn.disabled = false;
+          targetBtn.textContent = 'Actualizar Perfil';
+        }
+      };
+
+      window.updateAdminPassword = async () => {
+        const curPass = document.getElementById('admin-sec-current').value;
+        const newPass = document.getElementById('admin-sec-new').value;
+        const email = document.getElementById('admin-profile-email').value;
+        const targetBtn = event.currentTarget || event.target;
+
+        if (!curPass || !newPass) return window.showToast('Complete ambas contraseñas', 'error');
+        if (newPass.length < 6) return window.showToast('Contraseña muy corta', 'error');
+
+        targetBtn.disabled = true;
+        targetBtn.textContent = 'Cambiando...';
+
+        try {
+          const res = await ApiService.request('updatePassword', { email, currentPassword: curPass, newPassword: newPass });
+          if(res.success) {
+            window.showToast('Contraseña cambiada exitosamente', 'success');
+            document.getElementById('admin-sec-current').value = '';
+            document.getElementById('admin-sec-new').value = '';
+          } else {
+            window.showToast(res.error || 'Clave actual incorrecta', 'error');
+          }
+        } catch (e) {
+          window.showToast('Error de red al actualizar', 'error');
+        } finally {
+          targetBtn.disabled = false;
+          targetBtn.textContent = 'Cambiar Contraseña';
+        }
+      };
+
+      // Configuration Save
+      window.saveSettingsData = async () => {
+        const payload = {
+          storeName: document.getElementById('set-business-name').value,
+          storeRuc: document.getElementById('set-business-ruc').value,
+          taxRate: document.getElementById('set-tax-rate').value,
+          yape: document.getElementById('set-yape').value,
+          plin: document.getElementById('set-plin').value,
+          mpPublic: document.getElementById('set-mp-pub').value,
+          mpAccess: document.getElementById('set-mp-acc').value,
+          maintenance: document.getElementById('set-maintenance-toggle').checked
+        };
+        const targetBtn = event.currentTarget || event.target;
+        targetBtn.disabled = true;
+        targetBtn.textContent = 'Guardando...';
+
+        try {
+          const res = await ApiService.request('saveConfig', { settings: payload });
+          if (res.success) {
+            window.showToast('Configuración guardada exitosamente.', 'success');
+          } else {
+            window.showToast(res.error || 'Error al guardar configuración.', 'error');
+          }
+        } catch (e) {
+          window.showToast('Error de red al guardar.', 'error');
+        } finally {
+          targetBtn.disabled = false;
+          targetBtn.textContent = 'Guardar Toda la Configuración';
+        }
+      };
 
       // --- LOGOUT LOGIC ---
       window.logout = () => {

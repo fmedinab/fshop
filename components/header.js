@@ -8,14 +8,14 @@ export function renderHeader() {
   const headerHtml = `
     <header>
       <div class="container nav-container">
-        <a href="/" class="logo">
+        <a href="${window.BASE_URL}/" class="logo">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary-color);"><path d="M20.42 4.58a5.4 5.4 0 0 0-7.65 0l-.77.78-.77-.78a5.4 5.4 0 0 0-7.65 0C1.46 6.7 1.33 10.28 4 13l8 8 8-8c2.67-2.72 2.54-6.3.42-8.42z"></path></svg>
           ${CONFIG.STORE_NAME}<span>.</span>
         </a>
         
         <nav class="nav-links">
-          <a href="/" class="nav-item">Inicio</a>
-          <a href="/categories/" class="nav-item">Catálogo</a>
+          <a href="${window.BASE_URL}/" class="nav-item">Inicio</a>
+          <a href="${window.BASE_URL}/categories/" class="nav-item">Catálogo</a>
           
           <div class="color-switcher">
             <button class="color-btn" data-color="indigo" style="background: #4f46e5;" title="Indigo"></button>
@@ -29,7 +29,7 @@ export function renderHeader() {
           </button>
           
           <div style="display: flex; align-items: center; gap: 15px; margin-left: 5px;">
-            <a href="/cart/" class="cart-icon" title="Carrito">
+            <a href="${window.BASE_URL}/cart/" class="cart-icon" title="Carrito">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
               <span id="cart-count-badge" class="cart-count" style="display:none;">0</span>
             </a>
@@ -37,7 +37,7 @@ export function renderHeader() {
             <div class="user-menu" id="user-menu">
               ${user 
                 ? `<div class="user-avatar" id="user-avatar" title="Mi Cuenta">${user.name.charAt(0).toUpperCase()}</div>`
-                : `<button class="btn btn-outline btn-sm" onclick="window.loginClient()">Ingresar</button>`
+                : `<a href="${window.BASE_URL}/login/" class="btn btn-outline btn-sm">Ingresar</a>`
               }
               <div class="user-dropdown" id="user-dropdown">
                 ${user ? `
@@ -45,10 +45,10 @@ export function renderHeader() {
                     <div class="user-dropdown-name">${user.name}</div>
                     <div class="user-dropdown-email">${user.email}</div>
                   </div>
-                  <a href="/account/?tab=profile" class="user-dropdown-item">👤 Mi Perfil</a>
-                  <a href="/account/?tab=purchases" class="user-dropdown-item">📦 Mis Compras</a>
-                  <a href="/account/?tab=favorites" class="user-dropdown-item">❤️ Mis Favoritos</a>
-                  <a href="/admin/" class="user-dropdown-item" style="border-top: 1px dashed var(--border-color);">⚙️ Panel Admin (Demo)</a>
+                  <a href="${window.BASE_URL}/account/?tab=profile" class="user-dropdown-item">👤 Mi Perfil</a>
+                  <a href="${window.BASE_URL}/account/?tab=purchases" class="user-dropdown-item">📦 Mis Compras</a>
+                  <a href="${window.BASE_URL}/account/?tab=favorites" class="user-dropdown-item">❤️ Mis Favoritos</a>
+                  ${user.role === 'admin' ? `<a href="${window.BASE_URL}/admin/" class="user-dropdown-item" style="border-top: 1px dashed var(--border-color);">⚙️ Panel Admin</a>` : ''}
                   <div class="user-dropdown-item danger" onclick="window.logoutClient()">🚪 Cerrar Sesión</div>
                 ` : ''}
               </div>

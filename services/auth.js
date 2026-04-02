@@ -1,12 +1,10 @@
+import { ApiService } from './api.js';
+
 export const AuthService = {
   getUser() {
     const userStr = localStorage.getItem('currentUser');
     if (userStr) return JSON.parse(userStr);
-    
-    // Default mock client (Juan Pérez para que coincida con los pedidos de prueba)
-    const defaultUser = { id: 'C-001', name: 'Juan Pérez', email: 'juan@example.com', role: 'client' };
-    localStorage.setItem('currentUser', JSON.stringify(defaultUser));
-    return defaultUser;
+    return null; // Return null by default, meaning not logged in
   },
   
   isLoggedIn() {
@@ -14,12 +12,59 @@ export const AuthService = {
   },
 
   isAdmin() {
-    // Para propósitos de demo, siempre permitimos acceso al panel admin
-    return true; 
+    const user = this.getUser();
+    return user && user.role && (user.role.toLowerCase() === 'admin' || user.role.toLowerCase() === 'superadmin');
+  },
+
+  async login(email, password) {
+    try {
+      const response = await ApiService.loginUser(email, password);
+      
+      if (response && response.success && response.user) {
+        const user = response.user;
+        localStorage.setItem('currentUser', JSON.stringify(user));
+        
+        if (user.role && (user.role.toLowerCase() === 'admin' || user.role.toLowerCase() === 'superadmin')) {
+            sessionStorage.setItem('adminKey', password);
+        }
+        return true;
+      }
+
+      // Hardcoded fallback para pruebas rápidas
+      if (email === 'admin@trendstore.com' && password === 'admin123') {
+        const defaultAdmin = { id: 'A-001', name: 'Admin Demo', email: 'admin@trendstore.com', role: 'admin' };
+        localStorage.setItem('currentUser', JSON.stringify(defaultAdmin));
+        sessionStorage.setItem('adminKey', password);
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Error in login:', error);
+      return false;
+    }
+  },
+
+  async register(name, email, password, phone = "", address = "", document = "") {
+    try {
+      const response = await ApiService.registerUser(name, email, password, phone, address, document);
+      
+      if (response && response.success && response.user) {
+        // En lugar de iniciar sesión inmediatamente, solo devolvemos éxito
+        // localStorage.setItem('currentUser', JSON.stringify(response.user));
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Error in register:', error);
+      return false;
+    }
   },
 
   loginAsAdmin() {
     localStorage.setItem('currentUser', JSON.stringify({ id: 'A-001', name: 'Admin Demo', email: 'admin@trendstore.com', role: 'admin' }));
+    sessionStorage.setItem('adminKey', 'admin123'); // Asegurar acceso a BD
     window.location.reload();
   },
 
@@ -30,9 +75,10 @@ export const AuthService = {
 
   logout() {
     localStorage.removeItem('currentUser');
+    sessionStorage.removeItem('adminKey'); // Quitar la llave al salir
     window.showToast('Sesión cerrada exitosamente', 'success');
     setTimeout(() => {
-      window.location.href = '/';
+      window.location.href = window.BASE_URL + '/';
     }, 1000);
   }
 };

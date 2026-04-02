@@ -53,6 +53,19 @@ const defaultSettings = {
 };
 
 export const ApiService = {
+  // ========== MÉTODOS AUXILIARES DE RED ==========
+  async request(action, payload = {}) {
+    if (!CONFIG.API_URL) return { success: true, fake: true };
+    const formData = new URLSearchParams();
+    formData.append('data', JSON.stringify({ action, adminKey: sessionStorage.getItem('adminKey'), ...payload }));
+    
+    const response = await fetch(CONFIG.API_URL, {
+      method: 'POST',
+      body: formData,
+    });
+    return await response.json();
+  },
+
   async fetch(action, params = {}) {
     if (!CONFIG.API_URL) return this.mockResponse(action);
     try {
@@ -72,8 +85,9 @@ export const ApiService = {
   async getOrders() { return this.fetch('orders'); },
   async getSliders() { return this.fetch('sliders'); },
   async getCoupons() { return this.fetch('coupons'); },
-  async getUsers() { return this.fetch('users'); },
-  async getNotifications() { return this.fetch('notifications'); },
+  async getUsers(adminKey) { return this.fetch('users', { adminKey }); },
+  async getNotifications(adminKey) { return this.fetch('notifications', { adminKey }); },
+  async getConfig() { return this.fetch('config'); },
   
   async getDashboardStats() {
     return { 
@@ -111,7 +125,6 @@ export const ApiService = {
     const response = await fetch(CONFIG.API_URL, {
       method: 'POST',
       body: JSON.stringify({ action: 'createOrder', ...orderData }),
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' } 
     });
     return await response.json();
   },
@@ -122,7 +135,6 @@ export const ApiService = {
     const response = await fetch(CONFIG.API_URL, {
       method: 'POST',
       body: JSON.stringify({ action: 'createProduct', adminKey, ...productData }),
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' }
     });
     return await response.json();
   },
@@ -132,7 +144,6 @@ export const ApiService = {
     const response = await fetch(CONFIG.API_URL, {
       method: 'POST',
       body: JSON.stringify({ action: 'editProduct', adminKey, ...productData }),
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' }
     });
     return await response.json();
   },
@@ -142,7 +153,6 @@ export const ApiService = {
     const response = await fetch(CONFIG.API_URL, {
       method: 'POST',
       body: JSON.stringify({ action: 'deleteProduct', adminKey, id: productId }),
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' }
     });
     return await response.json();
   },
@@ -153,7 +163,6 @@ export const ApiService = {
     const response = await fetch(CONFIG.API_URL, {
       method: 'POST',
       body: JSON.stringify({ action: 'createCategory', adminKey, ...categoryData }),
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' }
     });
     return await response.json();
   },
@@ -163,7 +172,6 @@ export const ApiService = {
     const response = await fetch(CONFIG.API_URL, {
       method: 'POST',
       body: JSON.stringify({ action: 'editCategory', adminKey, ...categoryData }),
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' }
     });
     return await response.json();
   },
@@ -173,7 +181,6 @@ export const ApiService = {
     const response = await fetch(CONFIG.API_URL, {
       method: 'POST',
       body: JSON.stringify({ action: 'deleteCategory', adminKey, id: categoryId }),
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' }
     });
     return await response.json();
   },
@@ -184,7 +191,6 @@ export const ApiService = {
     const response = await fetch(CONFIG.API_URL, {
       method: 'POST',
       body: JSON.stringify({ action: 'updateOrderStatus', adminKey, orderId, status }),
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' }
     });
     return await response.json();
   },
@@ -195,7 +201,6 @@ export const ApiService = {
     const response = await fetch(CONFIG.API_URL, {
       method: 'POST',
       body: JSON.stringify({ action: 'createCoupon', adminKey, ...couponData }),
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' }
     });
     return await response.json();
   },
@@ -205,7 +210,6 @@ export const ApiService = {
     const response = await fetch(CONFIG.API_URL, {
       method: 'POST',
       body: JSON.stringify({ action: 'editCoupon', adminKey, ...couponData }),
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' }
     });
     return await response.json();
   },
@@ -215,7 +219,6 @@ export const ApiService = {
     const response = await fetch(CONFIG.API_URL, {
       method: 'POST',
       body: JSON.stringify({ action: 'deleteCoupon', adminKey, id: couponId }),
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' }
     });
     return await response.json();
   },
@@ -226,7 +229,6 @@ export const ApiService = {
     const response = await fetch(CONFIG.API_URL, {
       method: 'POST',
       body: JSON.stringify({ action: 'createNotification', adminKey, ...notificationData }),
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' }
     });
     return await response.json();
   },
@@ -237,7 +239,31 @@ export const ApiService = {
     const response = await fetch(CONFIG.API_URL, {
       method: 'POST',
       body: JSON.stringify({ action: 'updateSettings', adminKey, settings: settingsData }),
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+    });
+    return await response.json();
+  },
+
+  // ========== MÉTODOS DE LOGIN / REGISTRO ==========
+  async loginUser(email, password) {
+    if (!CONFIG.API_URL) return { success: false, error: 'API Offline' };
+    const formData = new URLSearchParams();
+    formData.append('data', JSON.stringify({ action: 'loginUser', email, password }));
+    
+    const response = await fetch(CONFIG.API_URL, {
+      method: 'POST',
+      body: formData,
+    });
+    return await response.json();
+  },
+
+  async registerUser(name, email, password, phone = "", address = "", document = "") {
+    if (!CONFIG.API_URL) return { success: false, error: 'API Offline' };
+    const formData = new URLSearchParams();
+    formData.append('data', JSON.stringify({ action: 'registerUser', name, email, password, phone, address, document }));
+    
+    const response = await fetch(CONFIG.API_URL, {
+      method: 'POST',
+      body: formData,
     });
     return await response.json();
   },
