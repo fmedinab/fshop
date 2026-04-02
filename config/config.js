@@ -4,7 +4,7 @@
 export const CONFIG = {
   // 1. URL de tu Google Apps Script (Web App URL)
   // Déjalo vacío ("") para usar datos de prueba mientras configuras tu backend
-  API_URL: "https://script.google.com/macros/s/AKfycbxt2B4E8z0r3UzmmIJa_Yk85doqkepr0iIiKpZnjgmV5U6EidtMFuIsbiLH5x2xOVj4uw/exec", 
+  API_URL: "https://script.google.com/macros/s/AKfycbz30nKdjMhTAQ9-EyYOjrsno1_0az9VspnCn8hRz8vKE8ioHic88KE8Eb4pPAA9Dxecfw/exec", 
   
   // 2. Credenciales de Mercado Pago (Public Key)
   MERCADO_PAGO_PUBLIC_KEY: "TEST-tu-public-key-aqui",

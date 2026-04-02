@@ -185,6 +185,34 @@ export const ApiService = {
     return await response.json();
   },
 
+  // ========== MÉTODOS DE ADMIN (SLIDERS) ==========
+  async createSlider(sliderData, adminKey) {
+    if (!CONFIG.API_URL) return { success: true, sliderId: 'SLD-' + Date.now() };
+    const response = await fetch(CONFIG.API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'createSlider', adminKey, ...sliderData }),
+    });
+    return await response.json();
+  },
+
+  async editSlider(sliderData, adminKey) {
+    if (!CONFIG.API_URL) return { success: true };
+    const response = await fetch(CONFIG.API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'editSlider', adminKey, ...sliderData }),
+    });
+    return await response.json();
+  },
+
+  async deleteSlider(sliderId, adminKey) {
+    if (!CONFIG.API_URL) return { success: true };
+    const response = await fetch(CONFIG.API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'deleteSlider', adminKey, id: sliderId }),
+    });
+    return await response.json();
+  },
+
   // ========== MÉTODOS DE ADMIN (ÓRDENES) ==========
   async updateOrderStatus(orderId, status, adminKey) {
     if (!CONFIG.API_URL) return { success: true };

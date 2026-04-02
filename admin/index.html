@@ -497,11 +497,18 @@
       };
 
       // Form Templates (Safely handling arrays)
-      window.updateVariantFields = (category) => {
+      window.updateVariantFields = () => {
+        const catSelect = document.getElementById('prod-category');
+        const selectedCat = catSelect ? catSelect.value.toLowerCase() : '';
+        
         const lblSizes = document.getElementById('lbl-sizes');
         const inputSizes = document.getElementById('input-sizes');
+        
+        // Determinar dinámicamente si es categoría tipo ropa/moda basado en nombre común
+        const isFashion = ['moda', 'ropa', 'zapatos', 'zapatillas', 'fashion'].includes(selectedCat);
+
         if (lblSizes && inputSizes) {
-          if (category === 'fashion') {
+          if (isFashion) {
             lblSizes.textContent = 'Tallas (ej: S, M, L o 39, 40)';
             if(!inputSizes.value) inputSizes.placeholder = 'S, M, L';
           } else {
@@ -512,51 +519,72 @@
       };
 
       window.openProductModal = (p = null) => {
-        const isFashion = p ? p.category === 'fashion' : true;
+        // Safe arrays
+        let images = p && p.images ? p.images : (p && p.image ? [p.image] : []);
+        const img1 = images[0] || '';
+        const img2 = images[1] || '';
+        const img3 = images[2] || '';
         
-        // Safe array handling
-        const imagesStr = p && p.images ? p.images.join(', ') : (p && p.image ? p.image : '');
         const sizesStr = p && p.sizes ? p.sizes.join(', ') : '';
         const colorsStr = p && p.colors ? p.colors.map(c=>c.name+':'+c.hex).join(', ') : '';
+        
+        // Dinamismo de Categorías
+        const categoriesOptions = (window.mockCategoriesData || [])
+            .map(c => `<option value="${c.name}" ${p && String(p.category).toLowerCase() === c.name.toLowerCase() ? 'selected' : ''}>${c.name}</option>`)
+            .join('');
 
         const html = `
           <div class="grid-2">
-            <div class="form-group"><label>Nombre del Producto</label><input type="text" class="form-control" value="${p ? p.name : ''}"></div>
+            <div class="form-group"><label>Nombre del Producto</label><input type="text" id="prod-name" class="form-control" value="${p ? p.name : ''}"></div>
             <div class="form-group">
               <label>Categoría</label>
-              <select class="form-control" onchange="window.updateVariantFields(this.value)">
-                <option value="fashion" ${p && p.category==='fashion'?'selected':''}>Moda (Ropa/Zapatos)</option>
-                <option value="tech" ${p && p.category==='tech'?'selected':''}>Tecnología</option>
+              <select id="prod-category" class="form-control" onchange="window.updateVariantFields()">
+                ${categoriesOptions || '<option value="general">General</option>'}
               </select>
             </div>
           </div>
           <div class="grid-2">
-            <div class="form-group"><label>Precio de Venta (S/)</label><input type="number" class="form-control" value="${p ? p.price : ''}"></div>
-            <div class="form-group"><label>Precio Original (Oferta S/)</label><input type="number" class="form-control" value="${p && p.originalPrice ? p.originalPrice : ''}"></div>
+            <div class="form-group"><label>Precio de Venta (S/)</label><input type="number" id="prod-price" class="form-control" value="${p ? p.price : ''}"></div>
+            <div class="form-group"><label>Precio Original (Oferta S/)</label><input type="number" id="prod-original-price" class="form-control" value="${p && p.originalPrice ? p.originalPrice : ''}"></div>
           </div>
           <div class="grid-2">
-            <div class="form-group"><label>Stock Disponible</label><input type="number" class="form-control" value="${p ? p.stock : ''}"></div>
-            <div class="form-group"><label>Estado</label><select class="form-control"><option>Activo</option><option>Inactivo</option></select></div>
+            <div class="form-group"><label>Stock Disponible</label><input type="number" id="prod-stock" class="form-control" value="${p ? p.stock : ''}"></div>
+            <div class="form-group"><label>Estado</label><select id="prod-status" class="form-control"><option>Activo</option><option>Inactivo</option></select></div>
           </div>
-          <div class="form-group"><label>URLs de Imágenes (separadas por coma)</label><textarea class="form-control" rows="2">${imagesStr}</textarea></div>
+          
+          <div style="background: var(--background-color); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--border-color);">
+            <h4 style="margin-bottom: 10px; font-size: 0.95rem;">Imágenes (URLs)</h4>
+            <div class="grid-3" style="gap: 10px;">
+                <input type="text" id="prod-img-1" class="form-control" value="${img1}" placeholder="URL Imagen Principal">
+                <input type="text" id="prod-img-2" class="form-control" value="${img2}" placeholder="URL Imagen 2 (Opcional)">
+                <input type="text" id="prod-img-3" class="form-control" value="${img3}" placeholder="URL Imagen 3 (Opcional)">
+            </div>
+          </div>
           
           <div style="background: var(--background-color); padding: 15px; border-radius: 8px; border: 1px dashed var(--border-color); margin-bottom: 20px;">
-            <h4 style="margin-bottom: 10px; font-size: 0.95rem;">Variantes del Producto</h4>
+            <h4 style="margin-bottom: 10px; font-size: 0.95rem;">Variantes del Producto (Separar por comas)</h4>
             <div class="grid-2">
               <div class="form-group">
-                <label id="lbl-sizes">${isFashion ? 'Tallas (ej: S, M, L o 39, 40)' : 'Variantes/Medidas (ej: 14", 16")'}</label>
-                <input type="text" id="input-sizes" class="form-control" value="${sizesStr}" placeholder="${isFashion ? 'S, M, L' : '128GB, 256GB'}">
+                <label id="lbl-sizes">Variantes/Medidas</label>
+                <input type="text" id="input-sizes" class="form-control" value="${sizesStr}" placeholder="Ej: S, M, L o 128GB, 256GB">
               </div>
               <div class="form-group">
                 <label>Colores (ej: Negro:#000000, Rojo:#ff0000)</label>
-                <input type="text" class="form-control" value="${colorsStr}" placeholder="Negro:#000000, Blanco:#ffffff">
+                <input type="text" id="input-colors" class="form-control" value="${colorsStr}" placeholder="Negro:#000000, Blanco:#ffffff">
               </div>
             </div>
           </div>
 
-          <div class="form-group"><label>Descripción</label><textarea class="form-control" rows="3">${p && p.description ? p.description : ''}</textarea></div>
+          <div class="form-group"><label>Descripción</label><textarea id="prod-desc" class="form-control" rows="3">${p && p.description ? p.description : ''}</textarea></div>
         `;
         window.openModal(p ? 'Editar Producto' : 'Nuevo Producto', html);
+        
+        // Llamar inmediatamente para configurar los labels
+        setTimeout(() => window.updateVariantFields(), 50);
+
+        // Guardar
+        const saveBtn = document.querySelector('.modal-content .btn-primary');
+        if (saveBtn) saveBtn.onclick = () => window.saveProductData(p ? p.id : null);
       };
 
       window.openCategoryModal = (c = null) => {
@@ -572,31 +600,113 @@
         if (saveBtn) saveBtn.onclick = () => window.saveCategoryData(c ? c.id : null);
       };
 
+      // --- HELPERS PARA RENDERIZAR TABLAS ---
+      window.renderProducts = (products) => {
+        window.mockProductsData = (products || []).map(p => {
+          if (p.images && typeof p.images === 'string') {
+            try { p.images = JSON.parse(p.images); } catch(e) { p.images = []; }
+          }
+          if (p.sizes && typeof p.sizes === 'string') {
+            try { p.sizes = JSON.parse(p.sizes); } catch(e) { p.sizes = []; }
+          }
+          if (p.colors && typeof p.colors === 'string') {
+            try { p.colors = JSON.parse(p.colors); } catch(e) { p.colors = []; }
+          }
+          return p;
+        });
+
+        document.getElementById('inventory-body').innerHTML = window.mockProductsData.length ? window.mockProductsData.map((p, i) => {
+          const mainImg = p.images && p.images.length > 0 ? p.images[0] : (p.image || 'https://placehold.co/100');
+          return `
+            <tr>
+              <td><div style="font-weight: 600; display:flex; align-items:center; gap:10px;"><img src="${mainImg}" style="width:40px; height:40px; border-radius:8px; object-fit:cover;"> ${p.name}</div></td>
+              <td><span class="badge badge-primary" style="text-transform: capitalize;">${p.category || 'General'}</span></td>
+              <td><div style="font-weight: bold;">${window.formatPrice(p.price || 0)}</div><div style="font-size: 0.85rem; color: var(--text-light);">${p.stock || 0} en stock</div></td>
+              <td><span class="badge ${p.status === 'Activo' ? 'badge-success' : 'badge-danger'}">${p.status || 'Activo'}</span></td>
+              <td>
+                <button class="btn btn-outline btn-sm" onclick="window.openProductModal(window.mockProductsData[${i}])">✏️</button>
+                <button class="btn btn-danger btn-sm" onclick="window.deleteProductData('${p.id}')">🗑️</button>
+              </td>
+            </tr>
+          `;
+        }).join('') : '<tr><td colspan="5" style="text-align:center;">No hay productos registrados</td></tr>';
+      };
+
+      window.renderCategories = (categories) => {
+        window.mockCategoriesData = categories || [];
+        document.getElementById('categories-body').innerHTML = window.mockCategoriesData.length ? window.mockCategoriesData.map((c, i) => `
+          <tr>
+            <td style="color: #666; font-size: 0.9em;">${c.id || '-'}</td>
+            <td><strong style="text-transform: capitalize;">${c.name || 'Sin Nombre'}</strong></td>
+            <td><span class="badge ${c.status === 'Activo' ? 'badge-success' : 'badge-danger'}">${c.status || 'Activo'}</span></td>
+            <td>
+              <button class="btn btn-outline btn-sm" onclick="window.openCategoryModal(window.mockCategoriesData[${i}])">✏️ Editar</button>
+              <button class="btn btn-danger btn-sm" onclick="window.deleteCategoryData('${c.id}')">🗑️ Eliminar</button>
+            </td>
+          </tr>
+        `).join('') : '<tr><td colspan="4" style="text-align:center;">No hay categorías registradas</td></tr>';
+      };
+
+      window.renderSliders = (sliders) => {
+        window.mockSlidersData = sliders || [];
+        document.getElementById('sliders-body').innerHTML = window.mockSlidersData.length ? window.mockSlidersData.map((s, i) => `
+          <tr>
+            <td><img src="${s.image || 'https://placehold.co/100'}" style="width: 80px; height: 40px; object-fit: cover; border-radius:4px;"></td>
+            <td><strong>${s.title || ''}</strong><div style="font-size:0.8em; color:#666;">${s.subtitle || ''}</div></td>
+            <td><a href="${s.link}" target="_blank" style="color: var(--primary-color);">${s.link}</a></td>
+            <td>
+              <button class="btn btn-outline btn-sm" onclick="window.openSliderModal(window.mockSlidersData[${i}])">✏️ Editar</button>
+              <button class="btn btn-danger btn-sm" onclick="window.deleteSliderData('${s.id}')">🗑️ Eliminar</button>
+            </td>
+          </tr>
+        `).join('') : '<tr><td colspan="4" style="text-align:center;">No hay sliders registrados</td></tr>';
+      };
+
+      window.renderCoupons = (coupons) => {
+        window.mockCouponsData = coupons || [];
+        document.getElementById('coupons-body').innerHTML = window.mockCouponsData.length ? window.mockCouponsData.map((c, i) => `
+          <tr>
+            <td><strong style="text-transform: uppercase;">${c.code}</strong></td>
+            <td><span class="badge" style="background:#e11d48;">${c.discount}</span></td>
+            <td>${c.expires || 'Sin límite'}</td>
+            <td><span class="badge ${c.status === 'Activo' ? 'badge-success' : 'badge-danger'}">${c.status || 'Activo'}</span></td>
+            <td>
+              <button class="btn btn-outline btn-sm" onclick="window.openCouponModal(window.mockCouponsData[${i}])">✏️ Editar</button>
+              <button class="btn btn-danger btn-sm" onclick="window.deleteCouponData('${c.id}')">🗑️ Eliminar</button>
+            </td>
+          </tr>
+        `).join('') : '<tr><td colspan="5" style="text-align:center;">No hay cupones registrados</td></tr>';
+      };
+
       window.openSliderModal = (s = null) => {
         const html = `
-          <div class="form-group"><label>Título</label><input type="text" class="form-control" value="${s ? s.title : ''}"></div>
-          <div class="form-group"><label>Subtítulo</label><input type="text" class="form-control" value="${s ? s.subtitle : ''}"></div>
-          <div class="form-group"><label>URL de Imagen</label><input type="text" class="form-control" value="${s ? s.image : ''}"></div>
+          <div class="form-group"><label>Título</label><input type="text" id="sld-title" class="form-control" value="${s ? s.title : ''}"></div>
+          <div class="form-group"><label>Subtítulo</label><input type="text" id="sld-subtitle" class="form-control" value="${s ? s.subtitle : ''}"></div>
+          <div class="form-group"><label>URL de Imagen</label><input type="text" id="sld-image" class="form-control" value="${s ? s.image : ''}"></div>
           <div class="grid-2">
-            <div class="form-group"><label>Texto del Botón</label><input type="text" class="form-control" value="${s ? s.buttonText : ''}"></div>
-            <div class="form-group"><label>Enlace del Botón</label><input type="text" class="form-control" value="${s ? s.link : ''}"></div>
+            <div class="form-group"><label>Texto del Botón</label><input type="text" id="sld-btn-text" class="form-control" value="${s ? s.buttonText : ''}"></div>
+            <div class="form-group"><label>Enlace del Botón</label><input type="text" id="sld-link" class="form-control" value="${s ? s.link : ''}" placeholder="/categories/moda"></div>
           </div>
         `;
         window.openModal(s ? 'Editar Slider' : 'Nuevo Slider', html);
+        const saveBtn = document.querySelector('.modal-content .btn-primary');
+        if (saveBtn) saveBtn.onclick = () => window.saveSliderData(s ? s.id : null);
       };
 
       window.openCouponModal = (c = null) => {
         const html = `
           <div class="grid-2">
-            <div class="form-group"><label>Código del Cupón</label><input type="text" class="form-control" value="${c ? c.code : ''}" style="text-transform: uppercase;"></div>
-            <div class="form-group"><label>Descuento (ej: 20% o S/ 50)</label><input type="text" class="form-control" value="${c ? c.discount : ''}"></div>
+            <div class="form-group"><label>Código del Cupón</label><input type="text" id="cpn-code" class="form-control" value="${c ? c.code : ''}" style="text-transform: uppercase;"></div>
+            <div class="form-group"><label>Descuento (ej: 20% o S/ 50)</label><input type="text" id="cpn-discount" class="form-control" value="${c ? c.discount : ''}"></div>
           </div>
           <div class="grid-2">
-            <div class="form-group"><label>Fecha de Vencimiento</label><input type="date" class="form-control" value="${c ? c.expires : ''}"></div>
-            <div class="form-group"><label>Estado</label><select class="form-control"><option ${c && c.status==='Activo'?'selected':''}>Activo</option><option ${c && c.status==='Inactivo'?'selected':''}>Inactivo</option></select></div>
+            <div class="form-group"><label>Fecha de Vencimiento</label><input type="date" id="cpn-expires" class="form-control" value="${c ? c.expires : ''}"></div>
+            <div class="form-group"><label>Estado</label><select id="cpn-status" class="form-control"><option ${c && c.status==='Activo'?'selected':''}>Activo</option><option ${c && c.status==='Inactivo'?'selected':''}>Inactivo</option></select></div>
           </div>
         `;
         window.openModal(c ? 'Editar Cupón' : 'Nuevo Cupón', html);
+        const saveBtn = document.querySelector('.modal-content .btn-primary');
+        if (saveBtn) saveBtn.onclick = () => window.saveCouponData(c ? c.id : null);
       };
 
       window.openZoneModal = (z = null) => {
@@ -634,33 +744,10 @@
         }
 
         // 2. Products
-        window.mockProductsData = products;
-        document.getElementById('inventory-body').innerHTML = products.map((p, i) => `
-          <tr>
-            <td><div style="font-weight: 600; display:flex; align-items:center; gap:10px;"><img src="${p.images && p.images.length > 0 ? p.images[0] : (p.image || 'https://placehold.co/100')}" style="width:40px; height:40px; border-radius:8px; object-fit:cover;"> ${p.name}</div></td>
-            <td><span class="badge badge-primary">${p.category}</span></td>
-            <td><div style="font-weight: bold;">${window.formatPrice(p.price)}</div><div style="font-size: 0.85rem; color: var(--text-light);">${p.stock} en stock</div></td>
-            <td><span class="badge badge-success">Activo</span></td>
-            <td>
-              <button class="btn btn-outline btn-sm" onclick="window.openProductModal(window.mockProductsData[${i}])">✏️</button>
-              <button class="btn btn-danger btn-sm" onclick="window.showToast('Producto eliminado', 'error')">🗑️</button>
-            </td>
-          </tr>
-        `).join('');
+        window.renderProducts(products);
 
         // 3. Categories
-        window.mockCategoriesData = categories;
-        document.getElementById('categories-body').innerHTML = categories.map((c, i) => `
-          <tr>
-            <td>${c.id}</td>
-            <td><strong>${c.name}</strong></td>
-            <td><span class="badge badge-success">${c.status || 'Activo'}</span></td>
-            <td>
-              <button class="btn btn-outline btn-sm" onclick="window.openCategoryModal(window.mockCategoriesData[${i}])">✏️</button>
-              <button class="btn btn-danger btn-sm" onclick="window.deleteCategoryData('${c.id}')">🗑️</button>
-            </td>
-          </tr>
-        `).join('');
+        window.renderCategories(categories);
 
         // 4. Sales
         document.getElementById('sales-body').innerHTML = orders.map(o => `
@@ -696,27 +783,9 @@
           document.getElementById('users-body').innerHTML = `<tr><td colspan="7" style="text-align:center;">Acceso denegado o error al cargar</td></tr>`;
         }
 
-        // 6. Promotions
-        window.mockSlidersData = sliders;
-        document.getElementById('sliders-body').innerHTML = sliders.map((s, i) => `
-          <tr>
-            <td><img src="${s.image}" style="width:80px; height:40px; object-fit:cover; border-radius:8px;"></td>
-            <td><strong>${s.title}</strong></td>
-            <td>${s.link}</td>
-            <td><button class="btn btn-outline btn-sm" onclick="window.openSliderModal(window.mockSlidersData[${i}])">✏️</button></td>
-          </tr>
-        `).join('');
-
-        window.mockCouponsData = coupons;
-        document.getElementById('coupons-body').innerHTML = coupons.map((c, i) => `
-          <tr>
-            <td><strong>${c.code}</strong></td>
-            <td><span class="badge badge-primary">${c.discount}</span></td>
-            <td>${c.expires}</td>
-            <td><span class="badge ${c.status === 'Activo' ? 'badge-success' : 'badge-neutral'}">${c.status}</span></td>
-            <td><button class="btn btn-outline btn-sm" onclick="window.openCouponModal(window.mockCouponsData[${i}])">✏️</button></td>
-          </tr>
-        `).join('');
+        // 6. Promotions & Coupons
+        window.renderSliders(sliders);
+        window.renderCoupons(coupons);
 
         // 7. Delivery
         const mockDelivery = [{ zone: 'Lima Metropolitana', cost: 15.00, time: '24-48 hrs' }, { zone: 'Callao', cost: 18.00, time: '24-48 hrs' }, { zone: 'Provincias', cost: 25.00, time: '3-5 días' }];
@@ -838,13 +907,104 @@
 
       // --- ADMIN KEY MANAGEMENT ---
       window.getAdminKey = () => {
-        let key = localStorage.getItem('admin_key');
+        let key = sessionStorage.getItem('adminKey');
         if (!key) {
-          key = prompt('Ingresa la clave de Admin para realizar cambios:');
-          if (key) localStorage.setItem('admin_key', key);
+          key = prompt('Por seguridad, ingresa tu clave de Admin para confirmar los cambios:');
+          if (key) sessionStorage.setItem('adminKey', key);
           else return null;
         }
         return key;
+      };
+
+      // --- PRODUCT CRUD ---
+      window.saveProductData = async (existingProdId) => {
+        const adminKey = window.getAdminKey();
+        if (!adminKey) return;
+
+        const name = document.getElementById('prod-name').value.trim();
+        const category = document.getElementById('prod-category').value;
+        const price = parseFloat(document.getElementById('prod-price').value);
+        const originalPrice = parseFloat(document.getElementById('prod-original-price').value) || null;
+        const stock = parseInt(document.getElementById('prod-stock').value) || 0;
+        const status = document.getElementById('prod-status').value;
+        const description = document.getElementById('prod-desc').value.trim();
+
+        // Procesar imágenes
+        const i1 = document.getElementById('prod-img-1').value.trim();
+        const i2 = document.getElementById('prod-img-2').value.trim();
+        const i3 = document.getElementById('prod-img-3').value.trim();
+        const images = [i1, i2, i3].filter(url => url !== '');
+
+        // Procesar tallas
+        const sizesRaw = document.getElementById('input-sizes').value;
+        const sizes = sizesRaw ? sizesRaw.split(',').map(s => s.trim()).filter(s => s !== '') : [];
+
+        // Procesar colores (espera "Nombre:#hex, Nombre:#hex")
+        const colorsRaw = document.getElementById('input-colors').value;
+        let colors = [];
+        if (colorsRaw) {
+          colorsRaw.split(',').forEach(c => {
+            const parts = c.split(':');
+            if(parts.length === 2) {
+              colors.push({ name: parts[0].trim(), hex: parts[1].trim() });
+            }
+          });
+        }
+
+        if (!name || isNaN(price)) {
+          window.showToast('El nombre y el precio válido son obligatorios', 'warning');
+          return;
+        }
+
+        const payload = {
+          name, category, price, originalPrice, stock, status, description, images, sizes, colors
+        };
+        if (existingProdId) payload.id = existingProdId;
+
+        try {
+          const btnSave = document.querySelector('.modal-content .btn-primary');
+          if (btnSave) { btnSave.disabled = true; btnSave.textContent = 'Guardando...'; }
+
+          let result;
+          if (existingProdId) {
+            result = await window.ApiService.editProduct(payload, adminKey);
+          } else {
+            result = await window.ApiService.createProduct(payload, adminKey);
+          }
+
+          if (result.success) {
+            window.showToast(result.message || 'Producto guardado', 'success');
+            window.closeModal();
+            const updatedProducts = await window.ApiService.getProducts();
+            window.renderProducts(updatedProducts);
+          } else {
+            window.showToast(result.error || 'Error al guardar producto', 'error');
+          }
+        } catch (error) {
+          window.showToast('Error de red: ' + error.message, 'error');
+        } finally {
+          const btnSave = document.querySelector('.modal-content .btn-primary');
+          if (btnSave) { btnSave.disabled = false; btnSave.textContent = 'Guardar'; }
+        }
+      };
+
+      window.deleteProductData = async (prodId) => {
+        if (!confirm('¿Seguro que deseas eliminar este producto?')) return;
+        const adminKey = window.getAdminKey();
+        if (!adminKey) return;
+
+        try {
+          const result = await window.ApiService.deleteProduct(prodId, adminKey);
+          if (result.success) {
+            window.showToast('Producto eliminado', 'success');
+            const updatedProducts = await window.ApiService.getProducts();
+            window.renderProducts(updatedProducts);
+          } else {
+            window.showToast(result.error || 'Error al eliminar', 'error');
+          }
+        } catch (e) {
+          window.showToast('Error de red', 'error');
+        }
       };
 
       // --- CATEGORY CRUD ---
@@ -864,6 +1024,12 @@
         }
 
         try {
+          const btnSave = document.querySelector('.modal-content .btn-primary');
+          if (btnSave) {
+            btnSave.disabled = true;
+            btnSave.textContent = 'Guardando...';
+          }
+          
           let result;
           if (existingCatId) {
             // EDIT
@@ -885,16 +1051,7 @@
             window.closeModal();
             // Recargar tabla
             const updatedCategories = await window.ApiService.getCategories();
-            window.mockCategoriesData = updatedCategories;
-            document.getElementById('categories-body').innerHTML = updatedCategories.map((c, i) => `
-              <tr>
-                <td>${c.id}</td>
-                <td><strong>${c.name}</strong></td>
-                <td><span class="badge badge-success">${c.status || 'Activo'}</span></td>
-                <td><button class="btn btn-outline btn-sm" onclick="window.openCategoryModal(window.mockCategoriesData[${i}])">✏️</button>
-                <button class="btn btn-danger btn-sm" onclick="window.deleteCategoryData('${c.id}')">🗑️</button></td>
-              </tr>
-            `).join('');
+            window.renderCategories(updatedCategories);
           } else {
             window.showToast(result.error || 'Error al guardar', 'error');
           }
@@ -914,26 +1071,154 @@
         }
 
         try {
+          const btnSave = document.querySelector('.modal-content .btn-primary');
+          if (btnSave) { btnSave.disabled = true; btnSave.textContent = 'Eliminando...'; }
           const result = await window.ApiService.deleteCategory(catId, adminKey);
           if (result.success) {
             window.showToast('Categoría eliminada', 'success');
             // Recargar tabla
             const updatedCategories = await window.ApiService.getCategories();
-            window.mockCategoriesData = updatedCategories;
-            document.getElementById('categories-body').innerHTML = updatedCategories.map((c, i) => `
-              <tr>
-                <td>${c.id}</td>
-                <td><strong>${c.name}</strong></td>
-                <td><span class="badge badge-success">${c.status || 'Activo'}</span></td>
-                <td><button class="btn btn-outline btn-sm" onclick="window.openCategoryModal(window.mockCategoriesData[${i}])">✏️</button>
-                <button class="btn btn-danger btn-sm" onclick="window.deleteCategoryData('${c.id}')">🗑️</button></td>
-              </tr>
-            `).join('');
+            window.renderCategories(updatedCategories);
           } else {
             window.showToast(result.error || 'Error al eliminar', 'error');
           }
         } catch (error) {
           window.showToast('Error: ' + error.message, 'error');
+        } finally {
+          const btnSave = document.querySelector('.modal-content .btn-primary');
+          if (btnSave) {
+            btnSave.disabled = false;
+            btnSave.textContent = 'Guardar';
+          }
+        }
+      };
+
+      // --- SLIDER CRUD ---
+      window.saveSliderData = async (existingSliderId) => {
+        const adminKey = window.getAdminKey();
+        if (!adminKey) return;
+
+        const title = document.getElementById('sld-title').value.trim();
+        const subtitle = document.getElementById('sld-subtitle').value.trim();
+        const image = document.getElementById('sld-image').value.trim();
+        const buttonText = document.getElementById('sld-btn-text').value.trim();
+        const link = document.getElementById('sld-link').value.trim();
+
+        if (!title || !image) {
+          window.showToast('El título y la URL de imagen son obligatorios', 'warning');
+          return;
+        }
+
+        const payload = { title, subtitle, image, buttonText, link };
+        if (existingSliderId) payload.id = existingSliderId;
+
+        try {
+          const btnSave = document.querySelector('.modal-content .btn-primary');
+          if (btnSave) { btnSave.disabled = true; btnSave.textContent = 'Guardando...'; }
+
+          let result;
+          if (existingSliderId) {
+            result = await window.ApiService.editSlider(payload, adminKey);
+          } else {
+            result = await window.ApiService.createSlider(payload, adminKey);
+          }
+
+          if (result.success) {
+            window.showToast(result.message || 'Slider guardado', 'success');
+            window.closeModal();
+            const updatedSliders = await window.ApiService.getSliders();
+            window.renderSliders(updatedSliders);
+          } else {
+            window.showToast(result.error || 'Error al guardar slider', 'error');
+          }
+        } catch (error) {
+          window.showToast('Error de red: ' + error.message, 'error');
+        } finally {
+          const btnSave = document.querySelector('.modal-content .btn-primary');
+          if (btnSave) { btnSave.disabled = false; btnSave.textContent = 'Guardar'; }
+        }
+      };
+
+      window.deleteSliderData = async (sliderId) => {
+        if (!confirm('¿Seguro que deseas eliminar este slider?')) return;
+        const adminKey = window.getAdminKey();
+        if (!adminKey) return;
+
+        try {
+          const result = await window.ApiService.deleteSlider(sliderId, adminKey);
+          if (result.success) {
+            window.showToast('Slider eliminado', 'success');
+            const updatedSliders = await window.ApiService.getSliders();
+            window.renderSliders(updatedSliders);
+          } else {
+            window.showToast(result.error || 'Error al eliminar', 'error');
+          }
+        } catch (e) {
+          window.showToast('Error de red', 'error');
+        }
+      };
+
+      // --- COUPON CRUD ---
+      window.saveCouponData = async (existingCouponId) => {
+        const adminKey = window.getAdminKey();
+        if (!adminKey) return;
+
+        const code = document.getElementById('cpn-code').value.trim().toUpperCase();
+        const discount = document.getElementById('cpn-discount').value.trim();
+        const expires = document.getElementById('cpn-expires').value.trim();
+        const status = document.getElementById('cpn-status').value;
+
+        if (!code || !discount) {
+          window.showToast('El código y descuento son obligatorios', 'warning');
+          return;
+        }
+
+        const payload = { code, discount, expires, status };
+        if (existingCouponId) payload.id = existingCouponId;
+
+        try {
+          const btnSave = document.querySelector('.modal-content .btn-primary');
+          if (btnSave) { btnSave.disabled = true; btnSave.textContent = 'Guardando...'; }
+
+          let result;
+          if (existingCouponId) {
+            result = await window.ApiService.editCoupon(payload, adminKey);
+          } else {
+            result = await window.ApiService.createCoupon(payload, adminKey);
+          }
+
+          if (result.success) {
+            window.showToast(result.message || 'Cupón guardado', 'success');
+            window.closeModal();
+            const updatedCoupons = await window.ApiService.getCoupons();
+            window.renderCoupons(updatedCoupons);
+          } else {
+            window.showToast(result.error || 'Error al guardar cupón', 'error');
+          }
+        } catch (error) {
+          window.showToast('Error de red: ' + error.message, 'error');
+        } finally {
+          const btnSave = document.querySelector('.modal-content .btn-primary');
+          if (btnSave) { btnSave.disabled = false; btnSave.textContent = 'Guardar'; }
+        }
+      };
+
+      window.deleteCouponData = async (couponId) => {
+        if (!confirm('¿Seguro que deseas eliminar este cupón?')) return;
+        const adminKey = window.getAdminKey();
+        if (!adminKey) return;
+
+        try {
+          const result = await window.ApiService.deleteCoupon(couponId, adminKey);
+          if (result.success) {
+            window.showToast('Cupón eliminado', 'success');
+            const updatedCoupons = await window.ApiService.getCoupons();
+            window.renderCoupons(updatedCoupons);
+          } else {
+            window.showToast(result.error || 'Error al eliminar', 'error');
+          }
+        } catch (e) {
+          window.showToast('Error de red', 'error');
         }
       };
 
