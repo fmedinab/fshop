@@ -76,15 +76,11 @@
     import { ApiService } from '../services/api.js';
     import { AuthService } from '../services/auth.js';
     import { FavoritesService } from '../services/favorites.js';
+    import '../assets/js/main.js';
     
     window.ApiService = ApiService;
     window.AuthService = AuthService;
     window.FavoritesService = FavoritesService;
-    
-    const script = document.createElement('script');
-    script.src = '../assets/js/main.js';
-    script.type = 'module';
-    document.body.appendChild(script);
 
     document.addEventListener('DOMContentLoaded', async () => {
       renderHeader();

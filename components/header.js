@@ -6,7 +6,7 @@ import { ApiService } from '../services/api.js';
 export function renderHeader() {
   const user = AuthService.getUser();
   
-  // Leer storeName de localStorage SIEMPRE (prioridad sobre CONFIG)
+  // Leer storeName de Google Sheets/localStorage (prioridad sobre CONFIG)
   let storeName = 'TrendStore';
   try {
     const settings = ApiService.getSettings();
@@ -18,6 +18,9 @@ export function renderHeader() {
   } catch(e) {
     storeName = CONFIG.STORE_NAME || 'TrendStore';
   }
+  
+  // Sincronizar con Google Sheets en background (sin bloquear)
+  ApiService.syncSettingsFromGoogleSheets();
   
   const headerHtml = `
     <header>

@@ -1,8 +1,8 @@
 import { CONFIG } from '../config/config.js';
 import { ApiService } from '../services/api.js';
 
-export async function renderFooter() {
-  // Leer storeName de localStorage SIEMPRE (prioridad sobre CONFIG)
+export function renderFooter() {
+  // Leer storeName de Google Sheets/localStorage (prioridad sobre CONFIG)
   let storeName = 'TrendStore';
   let storeDesc = 'La mejor selección de tecnología, moda y accesorios, directo a tu puerta con envíos a todo el país.';
   
@@ -17,6 +17,9 @@ export async function renderFooter() {
   } catch(e) {
     storeName = CONFIG.STORE_NAME || 'TrendStore';
   }
+  
+  // Sincronizar con Google Sheets en background (sin bloquear)
+  ApiService.syncSettingsFromGoogleSheets();
   
   // Create a placeholder for dynamic links
   const footerHtml = `
@@ -41,7 +44,8 @@ export async function renderFooter() {
         <div>
           <h4 style="margin-bottom: 15px; font-size: 1.1rem; color: var(--text-color);">Información y Ayuda</h4>
           <ul id="dynamic-footer-pages" style="color: var(--text-light); line-height: 2; list-style: none; padding: 0;">
-            <div class="skeleton" style="width: 60%; height: 15px; margin-top: 10px; border-radius: 4px;"></div>
+            <li><a href="${window.BASE_URL || ''}/about/" style="transition: color 0.2s;">Sobre Nosotros</a></li>
+            <li><a href="${window.BASE_URL || ''}/contact/" style="transition: color 0.2s;">Contacto</a></li>
           </ul>
         </div>
       </div>
@@ -55,40 +59,34 @@ export async function renderFooter() {
   const container = document.getElementById('footer-container');
   if (container) container.innerHTML = footerHtml;
 
-  // Append dynamic pages to the footer
+  // Cargar páginas dinámicas SIN BLOQUEAR (timeout de 3s máximo)
   try {
     if (window.ApiService && window.ApiService.getPages) {
-      const pages = await window.ApiService.getPages();
-      const listContainer = document.getElementById('dynamic-footer-pages');
+      const pagesPromise = window.ApiService.getPages();
+      const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve([]), 3000));
       
-      if (listContainer && Array.isArray(pages)) {
+      Promise.race([pagesPromise, timeoutPromise]).then(pages => {
+        if (!Array.isArray(pages) || pages.length === 0) return; // Sin páginas, salir
+        
+        const listContainer = document.getElementById('dynamic-footer-pages');
+        if (!listContainer) return;
+        
         const activePages = pages.filter(p => p.status === 'Activo');
+        let extraLinks = [];
         
-        let linksHtml = `
-          <li><a href="${window.BASE_URL || ''}/about/" style="transition: color 0.2s;">Sobre Nosotros</a></li>
-          <li><a href="${window.BASE_URL || ''}/contact/" style="transition: color 0.2s;">Contacto</a></li>
-        `;
-        
-        // Evitar duplicar nombres como 'Sobre Nosotros' o páginas ya listadas
         const avoidList = ['sobre-nosotros', 'contacto', 'contact', 'about', 'about-us', 'sobre nosotros', 'nosotros'];
-        
         activePages.forEach(p => {
           if (!avoidList.includes((p.slug || '').toLowerCase()) && !avoidList.includes((p.title || '').toLowerCase())) {
-            linksHtml += `<li><a href="${window.BASE_URL || ''}/page/?id=${p.slug}" style="transition: color 0.2s;">${p.title}</a></li>`;
+            extraLinks.push(`<li><a href="${window.BASE_URL || ''}/page/?id=${p.slug}" style="transition: color 0.2s;">${p.title}</a></li>`);
           }
         });
         
-        listContainer.innerHTML = linksHtml;
-      }
+        if (extraLinks.length > 0) {
+          listContainer.innerHTML += extraLinks.join('');
+        }
+      }).catch(() => {});
     }
   } catch (error) {
-    console.error("Error cargando páginas en el footer:", error);
-    const listContainer = document.getElementById('dynamic-footer-pages');
-    if (listContainer) {
-      listContainer.innerHTML = `
-        <li><a href="${window.BASE_URL || ''}/about/" style="transition: color 0.2s;">Sobre Nosotros</a></li>
-        <li><a href="${window.BASE_URL || ''}/contact/" style="transition: color 0.2s;">Contacto</a></li>
-      `;
-    }
+    // Silenciosamente ignora errores
   }
 }

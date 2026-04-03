@@ -112,15 +112,14 @@
     import { CartService } from '../services/cart.js';
     import { ApiService } from '../services/api.js';
     import { AuthService } from '../services/auth.js';
+    import '../assets/js/main.js';
     
     window.CartService = CartService;
     window.ApiService = ApiService;
 
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
       renderHeader();
       renderFooter();
-
-      // Configurar ubigeo
       setupUbigeo('customer-dep', 'customer-prov', 'customer-dist');
 
       const user = AuthService.getUser();

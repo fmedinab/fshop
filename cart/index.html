@@ -37,10 +37,11 @@
     import { renderHeader } from '../components/header.js';
     import { renderFooter } from '../components/footer.js';
     import { CartService } from '../services/cart.js';
+    import '../assets/js/main.js';
     
     window.CartService = CartService;
 
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
       renderHeader();
       renderFooter();
       renderCart();

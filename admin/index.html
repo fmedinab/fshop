@@ -528,6 +528,12 @@
     
     // --- ADMIN KEY MANAGEMENT GLOBALLY ---
     window.getAdminKey = () => {
+      // En localhost usar la clave válida para Google Apps Script
+      const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      if (isLocalhost) {
+        return 'admin123'; // ✅ Clave válida en Code.gs
+      }
+      
       let key = sessionStorage.getItem('adminKey');
       if (!key) {
         key = prompt('Por seguridad, ingresa tu clave de Admin para confirmar los cambios:');
@@ -1661,7 +1667,7 @@
         }
 
         try {
-          const result = await window.ApiService.updateSettings({
+          const settingsToSave = {
             storeName: document.getElementById('set-business-name').value,
             storeRuc: document.getElementById('set-business-ruc').value,
             taxRate: document.getElementById('set-tax-rate').value,
@@ -1674,11 +1680,11 @@
             mpPublic: document.getElementById('set-mp-pub').value,
             mpAccess: document.getElementById('set-mp-acc').value,
             maintenance: document.getElementById('set-maintenance-toggle').checked
-          }, adminKey);
+          };
+          const result = await window.ApiService.updateSettings(settingsToSave, adminKey);
           
           if(result && result.success) {
             window.showToast('Configuración guardada exitosamente', 'success');
-            
             // Re-renderizar header del admin para mostrar el nuevo nombre de tienda
             const newStoreName = document.getElementById('set-business-name').value;
             const headerStoreNameElement = document.getElementById('admin-header-store-name');

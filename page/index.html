@@ -35,16 +35,12 @@
     import { renderHeader } from '../components/header.js';
     import { renderFooter } from '../components/footer.js';
     import { ApiService } from '../services/api.js';
+    import '../assets/js/main.js';
     
     window.ApiService = ApiService;
-    const script = document.createElement('script');
-    script.src = '../assets/js/main.js';
-    script.type = 'module';
-    document.body.appendChild(script);
 
     document.addEventListener('DOMContentLoaded', async () => {
       renderHeader();
-      // El footer es async para pintar páginas, lo ejecutamos libre
       renderFooter();
 
       // Obtener el slug desde la URL (ej: /page/?id=terminos-y-condiciones)

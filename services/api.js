@@ -46,6 +46,7 @@ const mockNotifications = [
 const defaultSettings = {
   maintenanceMode: false,
   storeName: 'TrendStore',
+  storeRuc: '',
   aboutTitle: 'Nuestra Historia',
   aboutText: 'Somos TrendStore, tu destino número uno para tecnología, moda y accesorios...',
   contactEmail: 'hola@trendstore.com',
@@ -55,6 +56,11 @@ const defaultSettings = {
   businessRuc: '20123456789',
   taxRate: 18,
   apiUrl: '',
+  yape: '',
+  plin: '',
+  mpPublic: '',
+  mpAccess: '',
+  maintenance: false,
   mpPublicKey: 'TEST-tu-public-key-aqui',
   mpAccessToken: '',
   yapePhone: '999 888 777',
@@ -82,10 +88,12 @@ export const ApiService = {
 
   async fetch(action, params = {}) {
     if (!CONFIG.API_URL) return this.mockResponse(action);
+    
     try {
       const url = new URL(CONFIG.API_URL);
       url.searchParams.append('action', action);
       Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
+      
       const response = await fetch(url);
       return await response.json();
     } catch (error) {
@@ -124,12 +132,30 @@ export const ApiService = {
   },
 
   getSettings() {
+    // ✅ RÁPIDO: retorna de localStorage inmediatamente
     const localSettings = localStorage.getItem('store_dynamic_settings');
     return localSettings ? JSON.parse(localSettings) : defaultSettings;
   },
 
+  // ✅ ASYNC: sincroniza con Google Sheets en BACKGROUND (sin bloquear UI)
+  async syncSettingsFromGoogleSheets() {
+    if (!CONFIG.API_URL) return;
+    
+    try {
+      const response = await fetch(CONFIG.API_URL + '?action=config');
+      const result = await response.json();
+      if (result && !result.error) {
+        // Actualizar localStorage con datos de Google Sheets
+        localStorage.setItem('store_dynamic_settings', JSON.stringify(result));
+      }
+    } catch(e) {
+      // Silenciosamente ignora errores de conexión
+    }
+  },
+
   saveSettings(newSettings) {
-    const current = this.getSettings();
+    const localSettings = localStorage.getItem('store_dynamic_settings');
+    const current = localSettings ? JSON.parse(localSettings) : defaultSettings;
     const updated = { ...current, ...newSettings };
     localStorage.setItem('store_dynamic_settings', JSON.stringify(updated));
     return updated;
@@ -398,21 +424,32 @@ export const ApiService = {
 
   // ========== MÉTODOS DE ADMIN (CONFIGURACIÓN) ==========
   async updateSettings(settingsData, adminKey) {
-    // Guardar en localStorage siempre (modo offline y online)
+    // Guardar en localStorage como cache
     const saved = this.saveSettings(settingsData);
     
-    // Si hay API, enviar también al backend
-    if (!CONFIG.API_URL) return { success: true, data: saved };
+    // SIEMPRE contactar al backend si hay API_URL
+    // El backend validará la adminKey
+    if (!CONFIG.API_URL) {
+      return { success: true, data: saved };
+    }
     
     try {
       const response = await fetch(CONFIG.API_URL, {
         method: 'POST',
         body: JSON.stringify({ action: 'updateSettings', adminKey, settings: settingsData }),
       });
-      return await response.json();
+      const result = await response.json();
+      
+      // Si Google Sheets respondió correctamente, guardar también en localStorage para cache
+      if (result.success) {
+        this.saveSettings(settingsData);
+      }
+      
+      return result;
     } catch(e) {
       console.error('Error updating settings in API:', e);
-      return { success: true, data: saved }; // Retornar lo guardado en localStorage
+      // En caso de error de red, al menos guardamos en localStorage
+      return { success: true, data: saved };
     }
   },
 
@@ -469,6 +506,7 @@ export const ApiService = {
         if (action === 'users') resolve(mockUsers);
         if (action === 'roles') resolve(mockRoles);
         if (action === 'notifications') resolve(mockNotifications);
+        if (action === 'config') resolve(defaultSettings);
         if (action === 'stats') resolve({
           totalSales: 24500.50, 
           totalOrders: 156, 
