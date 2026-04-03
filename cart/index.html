@@ -39,11 +39,6 @@
     import { CartService } from '../services/cart.js';
     
     window.CartService = CartService;
-    const script = document.createElement('script');
-    script.src = '../assets/js/main.js';
-    script.type = 'module';
-    document.body.appendChild(script);
-    import '/assets/js/main.js';
 
     document.addEventListener('DOMContentLoaded', () => {
       renderHeader();
