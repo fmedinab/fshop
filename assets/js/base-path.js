@@ -16,7 +16,7 @@
   }
   
   // Nivel de profundidad del HTML actual
-  const pathDepth = (currentPath.match(/\//g) || []).length - 1; // Restar 1 porque pathname comienza con /
+  const pathDepth = (pathname.match(/\//g) || []).length - 1; // Restar 1 porque pathname comienza con /
   window.DEPTH = pathDepth >= 3 ? pathDepth - 2 : 0; // Relativo a /fshop/ o raíz
   
   // Ruta relativa automática

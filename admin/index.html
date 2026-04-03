@@ -127,7 +127,7 @@
     <!-- SIDEBAR -->
     <aside class="admin-sidebar" id="admin-sidebar">
       <div class="admin-sidebar-header">
-        <a href="../" class="logo" style="font-size: 1.2rem;">TrendStore<span>Admin</span></a>
+        <a href="../" class="logo" style="font-size: 1.2rem;"><span id="admin-header-store-name">TrendStore</span><span>Admin</span></a>
         <button class="mobile-menu-btn" onclick="document.getElementById('admin-sidebar').classList.remove('open')" style="display:none; background:none; border:none; font-size:1.5rem; color:var(--text-color); cursor:pointer;">✕</button>
       </div>
       <nav class="admin-nav">
@@ -586,6 +586,12 @@
             document.getElementById('set-mp-pub').value = configData.mpPublic || '';
             document.getElementById('set-mp-acc').value = configData.mpAccess || '';
             document.getElementById('set-maintenance-toggle').checked = configData.maintenance === 'true';
+            
+            // Actualizar el nombre de la tienda en el header del admin
+            const headerStoreNameEl = document.getElementById('admin-header-store-name');
+            if (headerStoreNameEl) {
+              headerStoreNameEl.textContent = configData.storeName || 'TrendStore';
+            }
         }
       } catch (e) {
           console.warn('No se pudo cargar la configuración', e);
@@ -1672,6 +1678,13 @@
           
           if(result && result.success) {
             window.showToast('Configuración guardada exitosamente', 'success');
+            
+            // Re-renderizar header del admin para mostrar el nuevo nombre de tienda
+            const newStoreName = document.getElementById('set-business-name').value;
+            const headerStoreNameElement = document.getElementById('admin-header-store-name');
+            if (headerStoreNameElement) {
+              headerStoreNameElement.textContent = newStoreName || 'TrendStore';
+            }
           } else {
             window.showToast('Error: ' + (result?.error || 'Falló la escritura'), 'error');
           }

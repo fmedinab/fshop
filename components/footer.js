@@ -2,17 +2,21 @@ import { CONFIG } from '../config/config.js';
 import { ApiService } from '../services/api.js';
 
 export async function renderFooter() {
-  // Intentar cargar la configuración de la tienda de forma dinámica
-  let storeName = CONFIG.STORE_NAME || 'TrendStore';
+  // Leer storeName de localStorage SIEMPRE (prioridad sobre CONFIG)
+  let storeName = 'TrendStore';
   let storeDesc = 'La mejor selección de tecnología, moda y accesorios, directo a tu puerta con envíos a todo el país.';
   
   try {
     const settings = ApiService.getSettings();
     if (settings) {
-      if (settings.storeName) storeName = settings.storeName;
+      storeName = settings.storeName || CONFIG.STORE_NAME || 'TrendStore';
       if (settings.aboutText) storeDesc = settings.aboutText.length > 100 ? settings.aboutText.substring(0, 100) + '...' : settings.aboutText;
+    } else {
+      storeName = CONFIG.STORE_NAME || 'TrendStore';
     }
-  } catch(e) {}
+  } catch(e) {
+    storeName = CONFIG.STORE_NAME || 'TrendStore';
+  }
   
   // Create a placeholder for dynamic links
   const footerHtml = `

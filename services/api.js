@@ -45,6 +45,7 @@ const mockNotifications = [
 // Configuración por defecto expandida
 const defaultSettings = {
   maintenanceMode: false,
+  storeName: 'TrendStore',
   aboutTitle: 'Nuestra Historia',
   aboutText: 'Somos TrendStore, tu destino número uno para tecnología, moda y accesorios...',
   contactEmail: 'hola@trendstore.com',
@@ -63,6 +64,11 @@ const defaultSettings = {
 export const ApiService = {
   // ========== MÉTODOS AUXILIARES DE RED ==========
   async request(action, payload = {}) {
+    // Si es una solicitud de configuración, siempre retornar desde localStorage primero
+    if (action === 'config') {
+      return this.getSettings();
+    }
+    
     if (!CONFIG.API_URL) return { success: true, fake: true };
     const formData = new URLSearchParams();
     formData.append('data', JSON.stringify({ action, adminKey: sessionStorage.getItem('adminKey'), ...payload }));
@@ -392,12 +398,22 @@ export const ApiService = {
 
   // ========== MÉTODOS DE ADMIN (CONFIGURACIÓN) ==========
   async updateSettings(settingsData, adminKey) {
-    if (!CONFIG.API_URL) return { success: true };
-    const response = await fetch(CONFIG.API_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'updateSettings', adminKey, settings: settingsData }),
-    });
-    return await response.json();
+    // Guardar en localStorage siempre (modo offline y online)
+    const saved = this.saveSettings(settingsData);
+    
+    // Si hay API, enviar también al backend
+    if (!CONFIG.API_URL) return { success: true, data: saved };
+    
+    try {
+      const response = await fetch(CONFIG.API_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'updateSettings', adminKey, settings: settingsData }),
+      });
+      return await response.json();
+    } catch(e) {
+      console.error('Error updating settings in API:', e);
+      return { success: true, data: saved }; // Retornar lo guardado en localStorage
+    }
   },
 
   // ========== MÉTODOS DE LOGIN / REGISTRO ==========

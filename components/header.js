@@ -5,11 +5,19 @@ import { ApiService } from '../services/api.js';
 
 export function renderHeader() {
   const user = AuthService.getUser();
-  let storeName = CONFIG.STORE_NAME || 'TrendStore';
+  
+  // Leer storeName de localStorage SIEMPRE (prioridad sobre CONFIG)
+  let storeName = 'TrendStore';
   try {
     const settings = ApiService.getSettings();
-    if (settings && settings.storeName) storeName = settings.storeName;
-  } catch(e) {}
+    if (settings && settings.storeName) {
+      storeName = settings.storeName;
+    } else if (CONFIG.STORE_NAME) {
+      storeName = CONFIG.STORE_NAME;
+    }
+  } catch(e) {
+    storeName = CONFIG.STORE_NAME || 'TrendStore';
+  }
   
   const headerHtml = `
     <header>
