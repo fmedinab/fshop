@@ -33,11 +33,47 @@
       <div class="checkout-form">
         <h2 style="margin-bottom: 25px; font-size: 1.5rem; border-bottom: 2px solid var(--border-color); padding-bottom: 10px;">Datos de Envío</h2>
         <form id="checkout-form">
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
             <div class="form-group"><label>Nombre Completo</label><input type="text" id="customer-name" class="form-control" required></div>
-            <div class="form-group"><label>Teléfono</label><input type="tel" id="customer-phone" class="form-control" required></div>
+            <div class="form-group">
+              <label>Documento (DNI/CE)</label>
+              <input type="text" id="customer-document" class="form-control" required
+                pattern="[0-9]{8,12}"
+                title="Debe tener entre 8 y 12 dígitos numéricos"
+                oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+            </div>
           </div>
-          <div class="form-group"><label>Dirección de Entrega</label><input type="text" id="customer-address" class="form-control" required></div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+            <div class="form-group"><label>Correo Electrónico</label><input type="email" id="customer-email" class="form-control" required></div>
+            <div class="form-group">
+              <label>Teléfono</label>
+              <input type="tel" id="customer-phone" class="form-control" required
+                pattern="[0-9]{9,15}"
+                title="Debe tener entre 9 y 15 dígitos"
+                oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+            <div class="form-group">
+              <label>Departamento</label>
+              <select id="customer-dep" class="form-control" required>
+                <option value="">Seleccionar...</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Provincia</label>
+              <select id="customer-prov" class="form-control" required>
+                <option value="">Seleccionar Provincia...</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Distrito</label>
+              <select id="customer-dist" class="form-control" required>
+                <option value="">Seleccionar Distrito...</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group"><label>Dirección Exacta (Calle, Nro, Ref)</label><input type="text" id="customer-address" class="form-control" required></div>
 
           <h2 style="margin: 40px 0 20px; font-size: 1.5rem; border-bottom: 2px solid var(--border-color); padding-bottom: 10px;">Método de Pago</h2>
           <div class="payment-methods">
@@ -69,11 +105,13 @@
   <div id="footer-container"></div>
 
   <script src="../assets/js/base-path.js"></script>
+  <script src="../assets/js/ubigeo.js"></script>
   <script type="module">
     import { renderHeader } from '../components/header.js';
     import { renderFooter } from '../components/footer.js';
     import { CartService } from '../services/cart.js';
     import { ApiService } from '../services/api.js';
+    import { AuthService } from '../services/auth.js';
     
     window.CartService = CartService;
     window.ApiService = ApiService;
@@ -86,6 +124,40 @@
     document.addEventListener('DOMContentLoaded', () => {
       renderHeader();
       renderFooter();
+
+      // Configurar ubigeo
+      setupUbigeo('customer-dep', 'customer-prov', 'customer-dist');
+
+      const user = AuthService.getUser();
+      if (user) {
+        if (user.name) document.getElementById('customer-name').value = user.name;
+        if (user.email) document.getElementById('customer-email').value = user.email;
+        if (user.phone) document.getElementById('customer-phone').value = user.phone;
+        if (user.address) {
+          try {
+            const parts = user.address.split(', ');
+            if (parts.length >= 4) {
+              const depSelect = document.getElementById('customer-dep');
+              depSelect.value = parts[parts.length - 1];
+              depSelect.dispatchEvent(new Event('change'));
+              
+              const provSelect = document.getElementById('customer-prov');
+              provSelect.value = parts[parts.length - 2];
+              provSelect.dispatchEvent(new Event('change'));
+              
+              const distSelect = document.getElementById('customer-dist');
+              distSelect.value = parts[parts.length - 3];
+              
+              document.getElementById('customer-address').value = parts.slice(0, parts.length - 3).join(', ');
+            } else {
+              document.getElementById('customer-address').value = user.address;
+            }
+          } catch(e) {
+            document.getElementById('customer-address').value = user.address;
+          }
+        }
+        if (user.document) document.getElementById('customer-document').value = user.document;
+      }
 
       const cart = CartService.getCart();
       if (cart.length === 0) { window.location.href = '/cart/'; return; }
@@ -157,12 +229,27 @@
         btn.innerHTML = '<span class="spinner"></span> Procesando...'; btn.disabled = true;
 
         const orderData = {
-          customer: { name: document.getElementById('customer-name').value, phone: document.getElementById('customer-phone').value, address: document.getElementById('customer-address').value },
+          customer: { 
+            name: document.getElementById('customer-name').value, 
+            email: document.getElementById('customer-email').value,
+            document: document.getElementById('customer-document').value,
+            phone: document.getElementById('customer-phone').value, 
+            address: document.getElementById('customer-address').value + ', ' + document.getElementById('customer-dist').value + ', ' + document.getElementById('customer-prov').value + ', ' + document.getElementById('customer-dep').value 
+          },
           items: cart, total: CartService.getTotal(), paymentMethod: selectedMethod, receiptImage: receiptBase64, date: new Date().toISOString()
         };
 
         try {
           const response = await ApiService.createOrder(orderData);
+          
+          const currentUser = AuthService.getUser();
+          if (currentUser && currentUser.email === orderData.customer.email) {
+            currentUser.phone = orderData.customer.phone;
+            currentUser.address = orderData.customer.address;
+            currentUser.document = orderData.customer.document;
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+          }
+
           if (selectedMethod === 'mercadopago' && response.init_point) window.location.href = response.init_point;
           else {
             CartService.clearCart();

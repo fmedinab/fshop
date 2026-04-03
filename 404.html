@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Página no encontrada | 404</title>
+  
+  <!-- Configurar <base> dinámico para solucionar rutas en GitHub Pages desde cualquier nivel de directorio -->
+  <script>
+    (function() {
+      var isGitHub = window.location.hostname.includes('github.io');
+      var baseHref = isGitHub ? '/fshop/' : '/';
+      document.write('<base href="' + baseHref + '">');
+      window.BASE_URL = isGitHub ? '/fshop' : '';
+    })();
+  </script>
+  <script src="assets/js/base-path.js"></script>
+
+  <link rel="stylesheet" href="assets/css/style.css">
+  <style>
+    .error-page-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      min-height: 65vh;
+      padding: 60px 20px;
+      margin: 40px 0;
+      border-radius: 30px;
+      background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+      box-shadow: inset 0 0 100px rgba(0,0,0,0.8), 0 20px 40px rgba(0,0,0,0.3);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    /* Efecto de estrellas de fondo (decorativo) */
+    .error-page-container::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-image: 
+        radial-gradient(1px 1px at 20px 30px, #ffffff, rgba(0,0,0,0)),
+        radial-gradient(1px 1px at 40px 70px, #ffffff, rgba(0,0,0,0)),
+        radial-gradient(1.5px 1.5px at 90px 40px, #ffffff, rgba(0,0,0,0)),
+        radial-gradient(2px 2px at 150px 150px, #ffffff, rgba(0,0,0,0)),
+        radial-gradient(1.5px 1.5px at 250px 90px, #ffffff, rgba(0,0,0,0));
+      background-repeat: repeat;
+      background-size: 300px 300px;
+      opacity: 0.4;
+      z-index: 0;
+    }
+
+    .error-code {
+      font-size: 10rem;
+      font-weight: 900;
+      line-height: 1;
+      color: #fff;
+      margin-bottom: 20px;
+      position: relative;
+      z-index: 2;
+      /* Animación 3D + Glow Neon usando primary-color */
+      text-shadow: 
+        0 1px 0 #cccccc, 
+        0 2px 0 #c9c9c9, 
+        0 3px 0 #bbbbbb, 
+        0 4px 0 #b9b9b9, 
+        0 5px 0 #aaaaaa, 
+        0 6px 1px rgba(0,0,0,0.1), 
+        0 0 5px rgba(0,0,0,0.1), 
+        0 1px 3px rgba(0,0,0,0.3), 
+        0 3px 5px rgba(0,0,0,0.2), 
+        0 5px 10px rgba(0,0,0,0.25), 
+        0 10px 10px rgba(0,0,0,0.2), 
+        0 20px 20px rgba(0,0,0,0.15),
+        0 0 20px var(--primary-color),
+        0 0 40px var(--primary-color);
+      transform: perspective(600px) rotateX(15deg);
+      animation: float3d 4s ease-in-out infinite;
+    }
+    
+    @keyframes float3d {
+      0% { transform: perspective(600px) rotateX(15deg) translateY(0px); }
+      50% { transform: perspective(600px) rotateX(15deg) translateY(-20px) scale(1.05); text-shadow: 0 1px 0 #cccccc, 0 2px 0 #c9c9c9, 0 3px 0 #bbbbbb, 0 4px 0 #b9b9b9, 0 5px 0 #aaaaaa, 0 6px 1px rgba(0,0,0,0.1), 0 0 5px rgba(0,0,0,0.1), 0 1px 3px rgba(0,0,0,0.3), 0 3px 5px rgba(0,0,0,0.2), 0 5px 10px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.2), 0 30px 30px rgba(0,0,0,0.3), 0 0 30px var(--primary-color), 0 0 60px var(--primary-color); }
+      100% { transform: perspective(600px) rotateX(15deg) translateY(0px); }
+    }
+
+    .error-title {
+      font-size: 2.5rem;
+      font-weight: 800;
+      color: #ffffff;
+      margin-bottom: 20px;
+      z-index: 2;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    }
+    
+    .error-description {
+      font-size: 1.15rem;
+      color: #cbd5e1; /* Gris claro para lectura perfecta en modo oscuro */
+      max-width: 550px;
+      margin-bottom: 40px;
+      line-height: 1.7;
+      z-index: 2;
+    }
+    
+    .error-actions {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+      justify-content: center;
+      z-index: 2;
+    }
+    
+    .btn-outline {
+      border: 2px solid #ffffff;
+      color: #ffffff;
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(5px);
+    }
+    
+    .btn-outline:hover {
+      background: var(--primary-color);
+      border-color: var(--primary-color);
+      color: white;
+      box-shadow: 0 0 15px var(--primary-color);
+    }
+
+    .error-svg {
+      width: 100%;
+      max-width: 250px;
+      margin-bottom: 20px;
+      z-index: 2;
+      filter: drop-shadow(0 0 10px var(--primary-color));
+      animation: pulse-glow 3s infinite alternate;
+    }
+
+    @keyframes pulse-glow {
+      0% { filter: drop-shadow(0 0 5px var(--primary-color)); }
+      100% { filter: drop-shadow(0 0 25px var(--primary-color)); }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header se inyecta por JS -->
+  <div id="header-container"></div>
+
+  <main class="container">
+    <div class="error-page-container">
+      <!-- SVG Minimalista para el 404 (carrito vacío/roto o brújula) -->
+      <svg class="error-svg" viewBox="0 0 24 24" fill="none" stroke="var(--primary-color)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        <path d="M15.3 8.7l-6.6 6.6"></path>
+      </svg>
+      
+      <h1 class="error-code">404</h1>
+      <h2 class="error-title">¡Oops! Página no encontrada</h2>
+      <p class="error-description">
+        Parece que te has perdido. La página que estás buscando podría haber sido eliminada, haber cambiado de nombre o estar temporalmente no disponible.
+      </p>
+      
+      <div class="error-actions">
+        <!-- Los enlaces utilizan rutas relativas al <base> establecido -->
+        <a href="" class="btn btn-primary" id="btn-home">Ir al Inicio</a>
+        <a href="categories/index.html" class="btn btn-outline" id="btn-products">Ver Productos</a>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer se inyecta por JS -->
+  <div id="footer-container"></div>
+
+  <!-- Scripts -->
+  <script type="module">
+    import { ApiService } from './services/api.js';
+    import { AuthService } from './services/auth.js';
+    import { FavoritesService } from './services/favorites.js';
+    
+    // Exponer servicios globalmente (requerido por main.js)
+    window.ApiService = ApiService;
+    window.AuthService = AuthService;
+    window.FavoritesService = FavoritesService;
+  </script>
+  <script src="assets/js/main.js" type="module"></script>
+  <script type="module">
+    import { renderHeader } from './components/header.js';
+    import { renderFooter } from './components/footer.js';
+    import { ApiService } from './services/api.js';
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Inyectar base url correcto en los botones
+      document.getElementById('btn-home').href = window.BASE_URL + '/';
+      document.getElementById('btn-products').href = window.BASE_URL + '/categories/';
+
+      // Actualizar Título Dinámico
+      try {
+        const settings = ApiService.getSettings();
+        if (settings && settings.storeName) {
+          document.title = `Página no encontrada | ${settings.storeName}`;
+        }
+      } catch(e) {}
+
+      // Componentes Base
+      renderHeader();
+      await renderFooter();
+      
+      // Manejar el menú hamburguesa
+      const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+      const mobileMenu = document.getElementById('mobile-menu');
+      if (mobileMenuBtn && mobileMenu) {
+        mobileMenuBtn.addEventListener('click', () => {
+          mobileMenu.classList.toggle('active');
+        });
+      }
+    });
+  </script>
+</body>
+</html>

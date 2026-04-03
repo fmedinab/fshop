@@ -57,15 +57,19 @@
         <form id="contact-form">
           <div class="form-group">
             <label>Nombre Completo</label>
-            <input type="text" class="form-control" required placeholder="Tu nombre">
+            <input type="text" id="contact-name" class="form-control" required placeholder="Tu nombre">
           </div>
           <div class="form-group">
             <label>Correo Electrónico</label>
-            <input type="email" class="form-control" required placeholder="tu@email.com">
+            <input type="email" id="contact-email" class="form-control" required placeholder="tu@email.com">
+          </div>
+          <div class="form-group">
+            <label>Asunto</label>
+            <input type="text" id="contact-subject" class="form-control" required placeholder="Asunto del mensaje">
           </div>
           <div class="form-group">
             <label>Mensaje</label>
-            <textarea class="form-control" rows="5" required placeholder="¿En qué podemos ayudarte?"></textarea>
+            <textarea id="contact-message" class="form-control" rows="5" required placeholder="¿En qué podemos ayudarte?"></textarea>
           </div>
           <button type="submit" class="btn btn-primary" style="width: 100%; font-size: 1.1rem; padding: 15px;">Enviar Mensaje</button>
         </form>
@@ -88,27 +92,59 @@
     document.body.appendChild(script);
     import '/assets/js/main.js';
 
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
       renderHeader();
       renderFooter();
 
-      const settings = ApiService.getSettings();
-      document.getElementById('c-address').textContent = settings.contactAddress;
-      document.getElementById('c-phone').textContent = settings.contactPhone;
-      document.getElementById('c-email').textContent = settings.contactEmail;
+      // Cargar configuraciones guardadas localmente (para no dejar en blanco)
+      const localSettings = window.ApiService.getSettings();
+      document.getElementById('c-address').textContent = localSettings.contactAddress || 'Cargando...';
+      document.getElementById('c-phone').textContent = localSettings.contactPhone || 'Cargando...';
+      document.getElementById('c-email').textContent = localSettings.contactEmail || 'Cargando...';
 
-      document.getElementById('contact-form').addEventListener('submit', (e) => {
+      // Traer la configuración real directamente desde Google Sheets (Config tab)
+      try {
+        const configData = await window.ApiService.getConfig();
+        if (configData && !configData.error) {
+            document.getElementById('c-address').textContent = configData.contactAddress || 'No especificado';
+            document.getElementById('c-phone').textContent = configData.contactPhone || 'No especificado';
+            document.getElementById('c-email').textContent = configData.contactEmail || 'No especificado';
+            
+            // Guardar esta configuración en caché localmente para otras páginas públicas
+            window.ApiService.saveSettings(configData); 
+        }
+      } catch (err) {
+        console.warn('Error cargando configuración dinámica:', err);
+      }
+
+      const form = document.getElementById('contact-form');
+      form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const btn = e.target.querySelector('button');
-        btn.innerHTML = '<span class="spinner"></span> Enviando...';
+        const btn = form.querySelector('button');
+        btn.textContent = 'Enviando...';
         btn.disabled = true;
-        
-        setTimeout(() => {
-          window.showToast('Mensaje enviado correctamente. Te contactaremos pronto.', 'success');
-          e.target.reset();
+
+        const data = {
+          name: document.getElementById('contact-name').value,
+          email: document.getElementById('contact-email').value,
+          subject: document.getElementById('contact-subject').value,
+          message: document.getElementById('contact-message').value
+        };
+
+        try {
+          const res = await window.ApiService.sendMessage(data);
+          if (res && res.success) {
+            window.showToast('Mensaje enviado correctamente');
+            form.reset();
+          } else {
+            window.showToast('Error al enviar mensaje', 'error');
+          }
+        } catch(err) {
+          window.showToast('Error de red', 'error');
+        } finally {
           btn.textContent = 'Enviar Mensaje';
           btn.disabled = false;
-        }, 1500);
+        }
       });
     });
   </script>

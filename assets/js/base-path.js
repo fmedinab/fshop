@@ -3,9 +3,17 @@
  * Se carga ANTES de los módulos para resolver rutas correctamente
  */
 (function() {
-  // Detectar si estamos en GitHub Pages (fshop sub-repo)
-  const currentPath = window.location.pathname;
-  window.BASE_URL = currentPath.includes('/fshop/') ? '/fshop' : '';
+  // Detectar si estamos en GitHub Pages (fshop), o en un subfolder local (como /EcommerceF)
+  const isGitHub = window.location.hostname.includes('github.io');
+  const pathname = window.location.pathname;
+  
+  if (isGitHub) {
+    window.BASE_URL = '/fshop';
+  } else if (pathname.includes('/EcommerceF')) {
+    window.BASE_URL = '/EcommerceF';
+  } else {
+    window.BASE_URL = ''; // Localhost rooteado
+  }
   
   // Nivel de profundidad del HTML actual
   const pathDepth = (currentPath.match(/\//g) || []).length - 1; // Restar 1 porque pathname comienza con /

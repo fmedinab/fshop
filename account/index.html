@@ -19,7 +19,7 @@
         <div class="account-nav-item active" data-tab="profile">👤 Mi Perfil</div>
         <div class="account-nav-item" data-tab="purchases">📦 Mis Compras</div>
         <div class="account-nav-item" data-tab="favorites">❤️ Mis Favoritos</div>
-        <div class="account-nav-item" style="color: var(--error-color); border-top: 1px solid var(--border-color); margin-top: 10px;" onclick="window.logoutClient()">🚪 Cerrar Sesión</div>
+        <div class="account-nav-item" id="btn-logout-sidebar" style="color: var(--error-color); border-top: 1px solid var(--border-color); margin-top: 10px;">🚪 Cerrar Sesión</div>
       </aside>
 
       <!-- CONTENT -->
@@ -106,6 +106,14 @@
         window.showToast('Perfil actualizado correctamente', 'success');
       });
 
+      // User Sidebar Logout Binding
+      const btnLogoutSidebar = document.getElementById('btn-logout-sidebar');
+      if (btnLogoutSidebar) {
+        btnLogoutSidebar.addEventListener('click', () => {
+          AuthService.logout();
+        });
+      }
+
       // Tab Navigation Logic
       const navItems = document.querySelectorAll('.account-nav-item[data-tab]');
       const tabs = document.querySelectorAll('.account-tab');
@@ -147,25 +155,30 @@
         const baseUrl = window.BASE_URL || '';
         try {
           const orders = await window.ApiService.getOrders();
-          const userOrders = orders.filter(o => o.customer === user.name);
+          const userOrders = orders.filter(o => o.customerEmail === user.email || o.customerName === user.name);
           
           if (userOrders.length === 0) {
             container.innerHTML = '<p style="color: var(--text-light);">Aún no has realizado ninguna compra.</p><a href="' + baseUrl + '/categories/" class="btn btn-primary mt-2">Ir a comprar</a>';
             return;
           }
 
-          container.innerHTML = userOrders.map(o => `
+          container.innerHTML = userOrders.map(o => {
+            const dateObj = new Date(o.date);
+            const dateStr = !isNaN(dateObj) ? dateObj.toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : o.date;
+            const methodStr = (o.paymentMethod || o.method || 'No especificado').toUpperCase();
+            
+            return `
             <div class="order-card">
               <div class="order-card-info">
                 <h4>Pedido ${o.id}</h4>
-                <p>Fecha: ${o.date} | Método: ${o.method}</p>
+                <p>Fecha: ${dateStr} | Método: <strong>${methodStr}</strong></p>
               </div>
               <div style="text-align: right;">
                 <div style="font-size: 1.2rem; font-weight: bold; color: var(--primary-color); margin-bottom: 5px;">${window.formatPrice(o.total)}</div>
-                <span class="badge ${o.status === 'Completado' ? 'badge-success' : 'badge-warning'}">${o.status}</span>
+                <span class="badge ${(o.status === 'Completado' || o.status === 'Entregado') ? 'badge-success' : 'badge-warning'}">${o.status || 'Pendiente'}</span>
               </div>
             </div>
-          `).join('');
+          `}).join('');
         } catch (error) {
           container.innerHTML = '<p style="color: var(--error-color);">Error cargando historial.</p>';
         }

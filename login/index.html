@@ -172,9 +172,9 @@
         btn.disabled = true;
         btn.textContent = 'Creando cuenta...';
 
-        const success = await window.AuthService.register(name, email, pass);
+        const response = await window.AuthService.register(name, email, pass);
         
-        if (success) {
+        if (response.success) {
           window.showToast('Cuenta creada exitosamente. Por favor, inicia sesión.', 'success');
           setTimeout(() => {
             // Cambiar a la pestaña de login
@@ -189,7 +189,7 @@
             formRegister.reset();
           }, 1500);
         } else {
-          window.showToast('Error al crear la cuenta. Intente otro correo.', 'error');
+          window.showToast(response.error || 'Error al crear la cuenta. Intente otro correo.', 'error');
           btn.disabled = false;
           btn.textContent = 'Crear Cuenta';
         }

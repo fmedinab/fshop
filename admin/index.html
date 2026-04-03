@@ -76,14 +76,58 @@
       .mobile-menu-btn { display: block !important; }
       .grid-2 { grid-template-columns: 1fr; }
     }
+
+    /* Global Loader */
+    #global-loader {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.5s ease, visibility 0.5s ease;
+    }
+    .loader-spinner {
+      width: 60px;
+      height: 60px;
+      border: 6px solid rgba(255, 255, 255, 0.2);
+      border-top-color: var(--primary-color);
+      border-radius: 50%;
+      animation: spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+      margin-bottom: 20px;
+    }
+    .loader-text {
+      color: #ffffff;
+      font-size: 1.5rem;
+      font-weight: bold;
+      margin-bottom: 5px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    }
+    .loader-subtext {
+      color: #cbd5e1;
+      font-size: 0.95rem;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
+  <!-- LOADING OVERLAY -->
+  <div id="global-loader">
+    <div class="loader-spinner"></div>
+    <h2 class="loader-text">Cargando panel...</h2>
+    <p class="loader-subtext">Sincronizando con la base de datos segura</p>
+  </div>
+
   <div class="admin-layout">
     <!-- SIDEBAR -->
     <aside class="admin-sidebar" id="admin-sidebar">
       <div class="admin-sidebar-header">
-        <a href="/" class="logo" style="font-size: 1.2rem;">TrendStore<span>Admin</span></a>
+        <a href="../" class="logo" style="font-size: 1.2rem;">TrendStore<span>Admin</span></a>
         <button class="mobile-menu-btn" onclick="document.getElementById('admin-sidebar').classList.remove('open')" style="display:none; background:none; border:none; font-size:1.5rem; color:var(--text-color); cursor:pointer;">✕</button>
       </div>
       <nav class="admin-nav">
@@ -92,6 +136,8 @@
         <div class="admin-nav-item" data-target="categories">📂 Categorías</div>
         <div class="admin-nav-item" data-target="sales">💰 Ventas</div>
         <div class="admin-nav-item" data-target="users">👥 Usuarios</div>
+        <div class="admin-nav-item" data-target="roles">🛡️ Roles</div>
+        <div class="admin-nav-item" data-target="messages">💬 Mensajes de Contacto</div>
         <div class="admin-nav-item" data-target="promotions">🎯 Promociones & Cupones</div>
         <div class="admin-nav-item" data-target="delivery">🚚 Delivery</div>
         <div class="admin-nav-item" data-target="reports">📈 Reportes</div>
@@ -101,7 +147,7 @@
         <div class="admin-nav-item" data-target="profile">👤 Mi Perfil</div>
         
         <div class="nav-bottom-actions">
-          <a href="/" class="admin-nav-item">⬅️ Volver a la Tienda</a>
+          <a href="../" class="admin-nav-item">⬅️ Volver a la Tienda</a>
           <div class="admin-nav-item" onclick="window.logout()" style="color: var(--error-color); font-weight: bold;">🚪 Cerrar Sesión</div>
         </div>
       </nav>
@@ -113,15 +159,41 @@
         <button class="btn btn-outline mobile-menu-btn" onclick="document.getElementById('admin-sidebar').classList.add('open')" style="display:none; padding: 5px 10px;">☰</button>
         
         <div style="display: flex; gap: 15px; align-items: center; margin-left: auto;">
-          <button id="admin-theme-toggle" class="btn btn-outline" style="padding: 6px 10px; border-radius: 8px; border: none; font-size: 1.2rem;" title="Modo Oscuro">🌙</button>
+            <!-- Notificaciones Top Bar -->
+            <div style="position: relative; cursor: pointer;" onclick="document.querySelector('[data-target=\'sales\']').click()">
+              <button class="btn btn-outline" style="padding: 6px 10px; border-radius: 8px; border: none; font-size: 1.2rem;" title="Notificaciones Pendientes de Venta">
+                🔔
+              </button>
+              <span id="top-notif-badge" style="position: absolute; top: -5px; right: -5px; background: var(--error-color); color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 0.75rem; display: none; align-items: center; justify-content: center; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">0</span>
+            </div>
+            
+            <button id="admin-theme-toggle" class="btn btn-outline" style="padding: 6px 10px; border-radius: 8px; border: none; font-size: 1.2rem;" title="Modo Oscuro">🌙</button>
+
+            <!-- User Profile Dropdown -->
+            <div style="position: relative; cursor: pointer; margin-left: 10px;" id="admin-profile-dropdown-btn">
+              <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--primary-color); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.1rem; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.1);" id="admin-avatar-letters">
+                A
+              </div>
+              <!-- Dropdown Menu -->
+              <div id="admin-profile-menu" style="display: none; position: absolute; top: 50px; right: 0; background: var(--card-background); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: var(--box-shadow); width: 220px; z-index: 100; flex-direction: column; overflow: hidden; padding: 10px 0;">
+                <div style="padding: 10px 15px; border-bottom: 1px solid var(--border-color); margin-bottom: 5px;">
+                  <strong style="color: var(--text-color);" id="admin-dropdown-name">Administrador</strong>
+                  <div style="font-size: 0.8rem; color: var(--text-light);" id="admin-dropdown-email">admin@tienda.com</div>
+                </div>
+                <div class="admin-nav-item" style="padding: 10px 15px; margin: 0; font-size: 0.95rem; justify-content: flex-start;" onclick="document.querySelector('[data-target=\'profile\']').click()">👤 Mi Perfil</div>
+                <div class="admin-nav-item" style="padding: 10px 15px; margin: 0; font-size: 0.95rem; justify-content: flex-start;" onclick="document.querySelector('[data-target=\'settings\']').click()">⚙️ Configuración</div>
+                <a href="../" class="admin-nav-item" style="padding: 10px 15px; margin: 0; font-size: 0.95rem; justify-content: flex-start; text-decoration: none;">⬅️ Volver a la Tienda</a>
+                <div class="admin-nav-item" style="padding: 10px 15px; margin: 0; font-size: 0.95rem; justify-content: flex-start; color: var(--error-color); font-weight: bold; border-top: 1px dashed var(--border-color);" onclick="window.logout()">🚪 Cerrar Sesión</div>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
 
       <!-- 1. DASHBOARD -->
       <section id="section-dashboard" class="admin-section active">
-        <div class="alert-banner">
-          <div><strong>🔔 Alertas:</strong> Tienes pedidos pendientes de revisión.</div>
-          <button class="btn btn-sm btn-outline" onclick="document.querySelector('[data-target=\'sales\']').click()">Revisar</button>
+        <div class="alert-banner" id="dashboard-alert-banner">
+          <div id="dashboard-alert-text"><strong>🔔 Alertas:</strong> Calculando notificaciones...</div>
+          <button class="btn btn-sm btn-outline" id="dashboard-alert-btn" style="display:none;" onclick="document.querySelector('[data-target=\'sales\']').click()">Revisar</button>
         </div>
         <div class="dashboard-cards">
           <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-info"><h4>Ventas del Mes</h4><div class="value" id="dash-sales">S/ 0.00</div></div></div>
@@ -184,6 +256,31 @@
         </div>
       </section>
 
+      <!-- 5.5. ROLES -->
+      <section id="section-roles" class="admin-section">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 20px; align-items: center;">
+          <h2 style="font-size: 1.5rem;">Gestión de Roles</h2>
+          <button class="btn btn-primary" onclick="window.openRoleModal()">+ Nuevo Rol</button>
+        </div>
+        <div class="table-container">
+          <table class="data-table">
+            <thead><tr><th>ID</th><th>Nombre</th><th>Descripción</th><th>Permisos</th><th>Acciones</th></tr></thead>
+            <tbody id="roles-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- MENSAJES DE CONTACTO -->
+      <section id="section-messages" class="admin-section">
+        <h2 style="font-size: 1.5rem; margin-bottom: 20px;">Bandeja de Mensajes</h2>
+        <div class="table-container">
+          <table class="data-table">
+            <thead><tr><th>Nombre</th><th>Asunto</th><th>Contacto</th><th>Fecha</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody id="messages-body"></tbody>
+          </table>
+        </div>
+      </section>
+
       <!-- 6. PROMOTIONS -->
       <section id="section-promotions" class="admin-section">
         <div style="display: flex; justify-content: space-between; margin-bottom: 20px; align-items: center;">
@@ -192,7 +289,7 @@
         </div>
         <div class="table-container">
           <table class="data-table">
-            <thead><tr><th>Imagen</th><th>Título</th><th>Enlace</th><th>Acciones</th></tr></thead>
+            <thead><tr><th>Imagen</th><th>Título</th><th>Enlace</th><th>Estado</th><th>Acciones</th></tr></thead>
             <tbody id="sliders-body"></tbody>
           </table>
         </div>
@@ -269,22 +366,15 @@
 
       <!-- 10. PAGES & CONTENT -->
       <section id="section-pages" class="admin-section">
-        <h2 style="font-size: 1.5rem; margin-bottom: 20px;">Páginas Dinámicas</h2>
-        <div class="grid-2">
-          <div class="table-container" style="padding: 20px;">
-            <h3 style="margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">Página: Sobre Nosotros</h3>
-            <div class="form-group"><label>Título Principal</label><input type="text" id="set-about-title" class="form-control"></div>
-            <div class="form-group"><label>Contenido (Texto)</label><textarea id="set-about-text" class="form-control" rows="8"></textarea></div>
-            <button class="btn btn-primary" onclick="window.saveDynamicPages()">Guardar Contenido</button>
-          </div>
-
-          <div class="table-container" style="padding: 20px;">
-            <h3 style="margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">Página: Contacto</h3>
-            <div class="form-group"><label>Correo Electrónico</label><input type="email" id="set-contact-email" class="form-control"></div>
-            <div class="form-group"><label>Teléfono</label><input type="text" id="set-contact-phone" class="form-control"></div>
-            <div class="form-group"><label>Dirección Física</label><input type="text" id="set-contact-address" class="form-control"></div>
-            <button class="btn btn-primary" onclick="window.saveDynamicPages()">Guardar Contacto</button>
-          </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 20px; align-items: center;">
+          <h2 style="font-size: 1.5rem;">Páginas Dinámicas</h2>
+          <button class="btn btn-primary" onclick="window.openPageModal()">+ Crear Página</button>
+        </div>
+        <div class="table-container">
+          <table class="data-table">
+            <thead><tr><th>Slug (URL)</th><th>Título Principal</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody id="pages-body"></tbody>
+          </table>
         </div>
       </section>
 
@@ -299,7 +389,11 @@
             <div class="form-group"><label>Nombre de la Tienda</label><input type="text" id="set-business-name" class="form-control"></div>
             <div class="form-group"><label>RUC / Documento</label><input type="text" id="set-business-ruc" class="form-control"></div>
             <div class="form-group"><label>Impuestos (IGV / IVA %)</label><input type="number" id="set-tax-rate" class="form-control"></div>
+            <div class="form-group"><label>Correo de Contacto</label><input type="email" id="set-contact-email" class="form-control"></div>
+            <div class="form-group"><label>Teléfono de Contacto</label><input type="text" id="set-contact-phone" class="form-control"></div>
+            <div class="form-group"><label>Dirección Física</label><input type="text" id="set-contact-address" class="form-control"></div>
             <div class="form-group"><label>Google Apps Script API URL</label><input type="text" id="set-api-url" class="form-control" placeholder="https://script.google.com/macros/s/..."></div>
+            <button class="btn btn-primary" style="width: 100%; margin-top: 10px;" onclick="window.saveSettingsData(event)">Guardar Datos del Negocio</button>
           </div>
 
           <!-- Métodos de Pago -->
@@ -341,7 +435,7 @@
           </div>
         </div>
         <div style="text-align: right; margin-bottom: 40px;">
-          <button class="btn btn-primary" style="padding: 15px 30px; font-size: 1.1rem;" onclick="window.saveSettingsData()">Guardar Toda la Configuración</button>
+          <button class="btn btn-primary" style="padding: 15px 30px; font-size: 1.1rem;" onclick="window.saveSettingsData(event)">Guardar Toda la Configuración</button>
         </div>
       </section>
 
@@ -400,6 +494,20 @@
     </div>
   </div>
 
+    <style>
+      @keyframes spin { 100% { transform: rotate(360deg); } }
+      .spinner-inline {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border: 2px solid rgba(255,255,255,0.3);
+        border-radius: 50%;
+        border-top-color: #fff;
+        animation: spin 1s linear infinite;
+        margin-right: 8px;
+        vertical-align: middle;
+      }
+    </style>
   <script src="../assets/js/base-path.js"></script>
   <script type="module">
     import { ApiService } from '../services/api.js';
@@ -417,6 +525,17 @@
     script.src = '../assets/js/main.js';
     script.type = 'module';
     document.body.appendChild(script);
+    
+    // --- ADMIN KEY MANAGEMENT GLOBALLY ---
+    window.getAdminKey = () => {
+      let key = sessionStorage.getItem('adminKey');
+      if (!key) {
+        key = prompt('Por seguridad, ingresa tu clave de Admin para confirmar los cambios:');
+        if (key) sessionStorage.setItem('adminKey', key);
+        else return null;
+      }
+      return key;
+    };
 
     document.addEventListener('DOMContentLoaded', async () => {
       
@@ -425,23 +544,48 @@
       if (adminUser) {
         document.getElementById('admin-profile-name').value = adminUser.name || '';
         document.getElementById('admin-profile-email').value = adminUser.email || '';
+
+        // Update header Dropdown profile
+        const avatarLetters = adminUser.name ? adminUser.name.substring(0, 2).toUpperCase() : 'A';
+        const avatarEl = document.getElementById('admin-avatar-letters');
+        if (avatarEl) avatarEl.textContent = avatarLetters;
+        
+        const dropdownName = document.getElementById('admin-dropdown-name');
+        if (dropdownName) dropdownName.textContent = adminUser.name || 'Administrador';
+        
+        const dropdownEmail = document.getElementById('admin-dropdown-email');
+        if (dropdownEmail) dropdownEmail.textContent = adminUser.email || 'admin@tienda.com';
+      }
+
+      // User Profile Dropdown Toggle Logic
+      const profileBtn = document.getElementById('admin-profile-dropdown-btn');
+      const profileMenu = document.getElementById('admin-profile-menu');
+      if (profileBtn && profileMenu) {
+        profileBtn.addEventListener('click', (e) => {
+          e.stopPropagation(); // Evita que se cierre inmediatamente
+          profileMenu.style.display = profileMenu.style.display === 'flex' ? 'none' : 'flex';
+        });
+
+        // Close when clicking outside
+        document.addEventListener('click', (e) => {
+          if (!profileBtn.contains(e.target)) {
+            profileMenu.style.display = 'none';
+          }
+        });
       }
 
       // Populate config if exists
       try {
         const configData = await ApiService.request('config');
-        if (configData && configData.length > 0) {
-            const configMap = {};
-            configData.forEach(c => configMap[c.key] = c.value);
-            
-            document.getElementById('set-business-name').value = configMap.storeName || '';
-            document.getElementById('set-business-ruc').value = configMap.storeRuc || '';
-            document.getElementById('set-tax-rate').value = configMap.taxRate || '';
-            document.getElementById('set-yape').value = configMap.yape || '';
-            document.getElementById('set-plin').value = configMap.plin || '';
-            document.getElementById('set-mp-pub').value = configMap.mpPublic || '';
-            document.getElementById('set-mp-acc').value = configMap.mpAccess || '';
-            document.getElementById('set-maintenance-toggle').checked = configMap.maintenance === 'true';
+        if (configData && !configData.error) {
+            document.getElementById('set-business-name').value = configData.storeName || '';
+            document.getElementById('set-business-ruc').value = configData.storeRuc || '';
+            document.getElementById('set-tax-rate').value = configData.taxRate || '';
+            document.getElementById('set-yape').value = configData.yape || '';
+            document.getElementById('set-plin').value = configData.plin || '';
+            document.getElementById('set-mp-pub').value = configData.mpPublic || '';
+            document.getElementById('set-mp-acc').value = configData.mpAccess || '';
+            document.getElementById('set-maintenance-toggle').checked = configData.maintenance === 'true';
         }
       } catch (e) {
           console.warn('No se pudo cargar la configuración', e);
@@ -647,6 +791,56 @@
         `).join('') : '<tr><td colspan="4" style="text-align:center;">No hay categorías registradas</td></tr>';
       };
 
+      window.renderRoles = (roles) => {
+        window.mockRoles = roles || [];
+        const tbody = document.getElementById('roles-body');
+        if (tbody) {
+          tbody.innerHTML = window.mockRoles.length ? window.mockRoles.map((r, i) => `
+            <tr>
+              <td>${r.id}</td>
+              <td><strong>${r.name}</strong></td>
+              <td>${r.description || '-'}</td>
+              <td>${(r.permissions || []).join(', ') || 'Ninguno'}</td>
+              <td>
+                <button class="btn btn-outline btn-sm" onclick="window.openRoleModal(window.mockRoles[${i}])">✏️</button>
+                <button class="btn btn-danger btn-sm" onclick="window.deleteRoleData('${r.id}')">🗑️</button>
+              </td>
+            </tr>
+          `).join('') : '<tr><td colspan="5" style="text-align:center;">No hay roles registrados</td></tr>';
+        }
+      };
+
+      window.loadRoles = async () => {
+        const adminKey = window.getAdminKey();
+        if (!adminKey) return;
+        try {
+          const roles = await window.ApiService.fetch('roles', { adminKey });
+          window.renderRoles(roles);
+        } catch (e) {
+          console.error('Error loading roles:', e);
+        }
+      };
+
+      window.renderUsers = (users) => {
+        window.mockUsers = users || [];
+        const tbody = document.getElementById('users-body');
+        if (tbody) {
+          tbody.innerHTML = window.mockUsers.length ? window.mockUsers.map((u, i) => `
+            <tr>
+              <td>${u.id}</td>
+              <td><strong>${u.name}</strong></td>
+              <td>${u.email}</td>
+              <td><span class="badge ${u.role === 'Admin' || u.role === 'admin' ? 'badge-primary' : 'badge-neutral'}">${u.role || '-'}</span></td>
+              <td>${u.registered || '-'}</td>
+              <td><span class="badge badge-success">${u.status || 'Activo'}</span></td>
+              <td>
+                <button class="btn btn-outline btn-sm" onclick="window.openUserRoleModal(window.mockUsers[${i}])">✏️ Rol</button>
+              </td>
+            </tr>
+          `).join('') : '<tr><td colspan="7" style="text-align:center;">No hay usuarios registrados o acceso denegado</td></tr>';
+        }
+      };
+
       window.renderSliders = (sliders) => {
         window.mockSlidersData = sliders || [];
         document.getElementById('sliders-body').innerHTML = window.mockSlidersData.length ? window.mockSlidersData.map((s, i) => `
@@ -654,12 +848,13 @@
             <td><img src="${s.image || 'https://placehold.co/100'}" style="width: 80px; height: 40px; object-fit: cover; border-radius:4px;"></td>
             <td><strong>${s.title || ''}</strong><div style="font-size:0.8em; color:#666;">${s.subtitle || ''}</div></td>
             <td><a href="${s.link}" target="_blank" style="color: var(--primary-color);">${s.link}</a></td>
+            <td><span class="badge ${s.status === 'Inactivo' ? 'badge-danger' : 'badge-success'}">${s.status || 'Activo'}</span></td>
             <td>
               <button class="btn btn-outline btn-sm" onclick="window.openSliderModal(window.mockSlidersData[${i}])">✏️ Editar</button>
               <button class="btn btn-danger btn-sm" onclick="window.deleteSliderData('${s.id}')">🗑️ Eliminar</button>
             </td>
           </tr>
-        `).join('') : '<tr><td colspan="4" style="text-align:center;">No hay sliders registrados</td></tr>';
+        `).join('') : '<tr><td colspan="5" style="text-align:center;">No hay sliders registrados</td></tr>';
       };
 
       window.renderCoupons = (coupons) => {
@@ -687,6 +882,13 @@
             <div class="form-group"><label>Texto del Botón</label><input type="text" id="sld-btn-text" class="form-control" value="${s ? s.buttonText : ''}"></div>
             <div class="form-group"><label>Enlace del Botón</label><input type="text" id="sld-link" class="form-control" value="${s ? s.link : ''}" placeholder="/categories/moda"></div>
           </div>
+          <div class="form-group">
+            <label>Estado</label>
+            <select id="sld-status" class="form-control">
+              <option value="Activo" ${s && s.status === 'Activo' ? 'selected' : ''}>Activo</option>
+              <option value="Inactivo" ${s && s.status === 'Inactivo' ? 'selected' : ''}>Inactivo</option>
+            </select>
+          </div>
         `;
         window.openModal(s ? 'Editar Slider' : 'Nuevo Slider', html);
         const saveBtn = document.querySelector('.modal-content .btn-primary');
@@ -709,6 +911,143 @@
         if (saveBtn) saveBtn.onclick = () => window.saveCouponData(c ? c.id : null);
       };
 
+      window.openRoleModal = (r = null) => {
+        const perms = r ? (r.permissions || []) : [];
+        const isChecked = (p) => perms.includes(p) || perms.includes('all') ? 'checked' : '';
+        const html = `
+          <div class="form-group"><label>Nombre del Rol</label><input type="text" id="role-name" class="form-control" value="${r ? r.name : ''}" required></div>
+          <div class="form-group"><label>Descripción</label><input type="text" id="role-desc" class="form-control" value="${r ? r.description : ''}"></div>
+          <div class="form-group">
+            <label>Permisos</label>
+            <div style="display:flex; flex-direction:column; gap:10px; margin-top:10px;">
+              <label><input type="checkbox" value="all" class="role-perm" ${isChecked('all')}> Acceso Total (all)</label>
+              <label><input type="checkbox" value="products" class="role-perm" ${isChecked('products')}> Productos / Inventario</label>
+              <label><input type="checkbox" value="categories" class="role-perm" ${isChecked('categories')}> Categorías</label>
+              <label><input type="checkbox" value="sales" class="role-perm" ${isChecked('sales')}> Ventas / Pedidos</label>
+              <label><input type="checkbox" value="users" class="role-perm" ${isChecked('users')}> Usuarios</label>
+              <label><input type="checkbox" value="roles" class="role-perm" ${isChecked('roles')}> Roles</label>
+              <label><input type="checkbox" value="messages" class="role-perm" ${isChecked('messages')}> Mensajes de Contacto</label>
+              <label><input type="checkbox" value="promotions" class="role-perm" ${isChecked('promotions')}> Promociones / Cupones</label>
+              <label><input type="checkbox" value="delivery" class="role-perm" ${isChecked('delivery')}> Zonas de Envío</label>
+              <label><input type="checkbox" value="pages" class="role-perm" ${isChecked('pages')}> Páginas y Contenido</label>
+              <label><input type="checkbox" value="settings" class="role-perm" ${isChecked('settings')}> Configuración</label>
+            </div>
+          </div>
+        `;
+        window.openModal(r ? 'Editar Rol' : 'Nuevo Rol', html);
+        const saveBtn = document.querySelector('.modal-content .btn-primary');
+        if (saveBtn) saveBtn.onclick = () => window.saveRoleData(r ? r.id : null);
+      };
+
+      window.saveRoleData = async (roleId) => {
+        const name = document.getElementById('role-name').value;
+        const description = document.getElementById('role-desc').value;
+        const permsBoxes = document.querySelectorAll('.role-perm:checked');
+        const permissions = Array.from(permsBoxes).map(cb => cb.value);
+
+        if (!name) return window.showToast('El nombre es obligatorio', 'error');
+        
+        const saveBtn = document.querySelector('.modal-content .btn-primary');
+        if (saveBtn) {
+          saveBtn.disabled = true;
+          saveBtn.innerHTML = '<span class="loading-spinner" style="width:16px;height:16px;margin-right:8px;display:inline-block;border:2px solid #fff;border-bottom-color:transparent;border-radius:50%;animation:rotation 1s linear infinite;"></span> Guardando...';
+        }
+
+        window.showToast('Guardando rol...', 'info');
+        const roleData = { name, description, permissions };
+
+        try {
+          const result = roleId
+            ? await window.ApiService.request('editRole', { id: roleId, ...roleData })
+            : await window.ApiService.request('createRole', roleData);
+
+          if (result.success) {
+            window.showToast('Rol guardado exitosamente', 'success');
+            window.closeModal();
+            const updated = await window.ApiService.fetch('roles', { adminKey: sessionStorage.getItem('adminKey') });
+            window.renderRoles(updated);
+          } else {
+            window.showToast(result.error || 'Error al guardar rol', 'error');
+            if (saveBtn) {
+              saveBtn.disabled = false;
+              saveBtn.innerHTML = 'Guardar Cambios';
+            }
+          }
+        } catch(e) {
+          window.showToast('Error de conexión', 'error');
+          if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = 'Guardar Cambios';
+          }
+          if (result.success) {
+            window.showToast('Rol eliminado', 'success');
+            const updated = await window.ApiService.fetch('roles', { adminKey: sessionStorage.getItem('adminKey') });
+            window.renderRoles(updated);
+          } else {
+            window.showToast(result.error || 'Error al eliminar rol', 'error');
+          }
+      
+        }
+      };
+
+      window.openUserRoleModal = (u) => {
+        if (!u) return;
+        const roleOptions = (window.mockRoles || []).map(r => 
+          `<option value="${r.name}" ${u.role === r.name ? 'selected' : ''}>${r.name}</option>`
+        ).join('') + `<option value="Admin" ${u.role === 'Admin' ? 'selected' : ''}>Admin (Por Defecto)</option>`
+         + `<option value="Cliente" ${u.role === 'Cliente' ? 'selected' : ''}>Cliente (Por Defecto)</option>`;
+
+        const html = `
+          <div class="form-group">
+            <label>Usuario: ${u.name} (${u.email})</label>
+            <p style="margin-bottom: 10px; color: var(--text-light); font-size: 0.85em;">ID: ${u.id}</p>
+          </div>
+          <div class="form-group">
+            <label>Asignar Rol</label>
+            <select id="user-role-select" class="form-control">
+              ${roleOptions}
+            </select>
+          </div>
+        `;
+        window.openModal('Cambiar Rol de Usuario', html);
+        const saveBtn = document.querySelector('.modal-content .btn-primary');
+        if (saveBtn) saveBtn.onclick = () => window.saveUserRoleData(u.id);
+      };
+
+      window.saveUserRoleData = async (userId) => {
+        const newRole = document.getElementById('user-role-select').value;
+        const adminKey = window.getAdminKey();
+        if (!adminKey) return;
+        
+        const saveBtn = document.querySelector('.modal-content .btn-primary');
+        if (saveBtn) {
+          saveBtn.disabled = true;
+          saveBtn.innerHTML = '<span class="loading-spinner" style="width:16px;height:16px;margin-right:8px;display:inline-block;border:2px solid #fff;border-bottom-color:transparent;border-radius:50%;animation:rotation 1s linear infinite;"></span> Guardando...';
+        }
+
+        try {
+          const result = await window.ApiService.request('updateUserRole', { id: userId, role: newRole });
+          if (result.success) {
+            window.showToast('Rol de usuario actualizado', 'success');
+            window.closeModal();
+            const updated = await window.ApiService.fetch('users', { adminKey });
+            window.renderUsers(updated);
+          } else {
+            window.showToast(result.error || 'Error al actualizar', 'error');
+            if (saveBtn) {
+              saveBtn.disabled = false;
+              saveBtn.innerHTML = 'Guardar Cambios';
+            }
+          }
+        } catch(e) {
+          window.showToast('Error de servidor', 'error');
+          if (saveBtn) {
+             saveBtn.disabled = false;
+             saveBtn.innerHTML = 'Guardar Cambios';
+          }
+        }
+      };
+
       window.openZoneModal = (z = null) => {
         const html = `
           <div class="form-group"><label>Nombre del Distrito / Zona</label><input type="text" class="form-control" value="${z ? z.zone : ''}"></div>
@@ -720,10 +1059,375 @@
         window.openModal(z ? 'Editar Zona' : 'Nueva Zona', html);
       };
 
+      window.renderOrders = (orders) => {
+        window.mockOrdersData = orders || [];
+        document.getElementById('sales-body').innerHTML = window.mockOrdersData.length ? window.mockOrdersData.map((o, i) => {
+          let badgeClass = 'badge-neutral';
+          if (o.status === 'Completado' || o.status === 'Entregado') badgeClass = 'badge-success';
+          if (o.status === 'Pendiente' || o.status === 'Procesando') badgeClass = 'badge-warning';
+          if (o.status === 'Cancelado') badgeClass = 'badge-danger';
+          
+          return `
+          <tr>
+            <td><strong>${o.id}</strong></td>
+            <td>${o.customerName || (o.customer ? o.customer.name || o.customer : 'N/A')}</td>
+            <td>${o.date}</td>
+            <td><span class="badge" style="background:var(--card-bg); border:1px solid var(--border-color); color:var(--text-color);">${o.paymentMethod || o.method || 'N/A'}</span></td>
+            <td><strong>${window.formatPrice(o.total || 0)}</strong></td>
+            <td><span class="badge ${badgeClass}">${o.status || 'Pendiente'}</span></td>
+            <td>
+              <button class="btn btn-outline btn-sm" onclick="window.openOrderModal(window.mockOrdersData[${i}])">👁️ Ver o Editar</button>
+            </td>
+          </tr>
+        `}).join('') : '<tr><td colspan="7" style="text-align:center;">No hay ventas registradas</td></tr>';
+      };
+
+      window.openOrderModal = (o) => {
+        if (!o) return;
+        let itemsHtml = '<p>No hay detalles de productos</p>';
+        if (o.items && typeof o.items === 'string') {
+          try {
+            const parsedItems = JSON.parse(o.items);
+            itemsHtml = parsedItems.map(item => `<li>${item.quantity || 1}x ${item.name} - ${window.formatPrice(item.price || item.unitPrice || 0)}</li>`).join('');
+          } catch(e) { itemsHtml = '<p>Error al leer productos</p>'; }
+        } else if (Array.isArray(o.items)) {
+           itemsHtml = o.items.map(item => `<li>${item.quantity || 1}x ${item.name} - ${window.formatPrice(item.price || item.unitPrice || 0)}</li>`).join('');
+        }
+
+        const html = `
+          <div style="background: var(--background-color); padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 0.9em;">
+            <div class="grid-2">
+              <div><strong>Cliente:</strong> ${o.customerName || (o.customer ? o.customer.name || o.customer : 'N/A')}</div>
+              ${o.customerEmail ? `<div><strong>Email:</strong> ${o.customerEmail}</div>` : ''}
+              ${o.customerDocument ? `<div><strong>Documento:</strong> ${o.customerDocument}</div>` : ''}
+              <div><strong>Teléfono:</strong> ${o.customerPhone || 'N/A'}</div>
+              <div style="grid-column: span 2;"><strong>Dirección:</strong> ${o.customerAddress || 'N/A'}</div>
+            </div>
+            <div style="margin-top: 10px;"><strong>Método de Pago:</strong> <span style="text-transform: uppercase;">${o.paymentMethod || o.method || 'N/A'}</span></div>
+            ${o.receiptUrl ? `<div style="margin-top: 10px;"><a href="${o.receiptUrl}" target="_blank" style="color: var(--primary-color);">📎 Ver Comprobante de Pago (Enlace)</a></div>` : ''}
+          </div>
+
+          <h4 style="margin-bottom: 10px;">Productos</h4>
+          <ul style="list-style: none; padding: 0; background: var(--section-overlay); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; margin-bottom: 20px;">
+            ${itemsHtml}
+          </ul>
+
+          <div class="grid-2" style="align-items: center;">
+            <div><strong style="font-size: 1.2rem;">Total: ${window.formatPrice(o.total || 0)}</strong></div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <select id="ord-status" class="form-control" style="background: var(--card-bg); border-color: var(--primary-color); color: var(--primary-color); font-weight: bold;">
+                <option value="Pendiente" ${o.status === 'Pendiente' ? 'selected' : ''}>Pendiente (Revisión)</option>
+                <option value="Procesando" ${o.status === 'Procesando' ? 'selected' : ''}>Procesando (Empacando)</option>
+                <option value="Enviado" ${o.status === 'Enviado' ? 'selected' : ''}>Enviado (En camino)</option>
+                <option value="Entregado" ${o.status === 'Entregado' ? 'selected' : ''}>Entregado (Completado)</option>
+                <option value="Cancelado" ${o.status === 'Cancelado' ? 'selected' : ''}>Cancelado</option>
+              </select>
+            </div>
+          </div>
+        `;
+        
+        window.openModal('Gestionar Pedido: ' + o.id, html);
+        const saveBtn = document.querySelector('.modal-content .btn-primary');
+        if (saveBtn) {
+          saveBtn.textContent = 'Actualizar Estado';
+          saveBtn.onclick = () => window.updateOrderStatus(o.id);
+        }
+      };
+
+      window.updateOrderStatus = async (orderId) => {
+        const adminKey = window.getAdminKey();
+        if (!adminKey) return;
+
+        const newStatus = document.getElementById('ord-status').value;
+        const btnSave = document.querySelector('.modal-content .btn-primary');
+        
+        try {
+          if (btnSave) { btnSave.disabled = true; btnSave.textContent = 'Actualizando...'; }
+          const result = await window.ApiService.updateOrderStatus(orderId, newStatus, adminKey);
+          if (result.success) {
+            window.showToast('Estado actualizado correctamente', 'success');
+            window.closeModal();
+            const updatedOrders = await window.ApiService.getOrders();
+            window.renderOrders(updatedOrders);
+          } else {
+            window.showToast(result.error || 'Error al actualizar orden', 'error');
+          }
+        } catch (error) {
+          window.showToast('Error de red: ' + error.message, 'error');
+        } finally {
+          if (btnSave) { btnSave.disabled = false; btnSave.textContent = 'Actualizar Estado'; }
+        }
+      };
+
+      window.renderZones = (zones) => {
+        window.mockZones = zones || [];
+        document.getElementById('delivery-body').innerHTML = window.mockZones.length ? window.mockZones.map((z, i) => `
+          <tr>
+            <td><strong>${z.name}</strong></td>
+            <td>${window.formatPrice(z.cost)}</td>
+            <td>${z.estimatedTime || 'N/A'}</td>
+            <td><span class="badge ${z.status === 'Inactivo' ? 'badge-danger' : 'badge-success'}">${z.status || 'Activo'}</span></td>
+            <td>
+              <button class="btn btn-outline btn-sm" onclick="window.openZoneModal(window.mockZones[${i}])">✏️</button>
+              <button class="btn btn-outline btn-sm" onclick="window.deleteZone('${z.id}')">🗑️</button>
+            </td>
+          </tr>
+        `).join('') : '<tr><td colspan="5" style="text-align:center;">No hay zonas de envío registradas</td></tr>';
+      };
+
+      window.openZoneModal = (zone) => {
+        const isEdit = !!zone;
+        const html = `
+          <form id="zone-form" onsubmit="event.preventDefault(); window.saveZone('${zone?.id || ''}')">
+            <div class="form-group">
+              <label>Nombre de Zona / Distrito (Ej: Wanchaq - Cusco)</label>
+              <input type="text" id="zon-name" class="form-control" value="${zone?.name || ''}" required>
+            </div>
+            <div class="grid-2">
+              <div class="form-group">
+                <label>Costo de Envío (S/)</label>
+                <input type="number" step="0.5" min="0" id="zon-cost" class="form-control" value="${zone?.cost !== undefined ? zone.cost : ''}" required>
+              </div>
+              <div class="form-group">
+                <label>Tiempo Estimado</label>
+                <input type="text" id="zon-time" class="form-control" placeholder="Ej: Mismo día, 1-2 días" value="${zone?.estimatedTime || ''}" required>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Estado</label>
+              <select id="zon-status" class="form-control">
+                <option value="Activo" ${zone?.status === 'Activo' ? 'selected' : ''}>Activo</option>
+                <option value="Inactivo" ${zone?.status === 'Inactivo' ? 'selected' : ''}>Inactivo</option>
+              </select>
+            </div>
+          </form>
+        `;
+        window.openModal(isEdit ? 'Editar Zona de Envío' : 'Nueva Zona de Envío', html);
+        const saveBtn = document.querySelector('.modal-content .btn-primary');
+        if (saveBtn) {
+          saveBtn.textContent = 'Guardar Zona';
+          saveBtn.onclick = () => document.getElementById('zone-form').requestSubmit();
+        }
+      };
+
+      window.saveZone = async (id) => {
+        const adminKey = window.getAdminKey();
+        if (!adminKey) return;
+
+        const zoneData = {
+          name: document.getElementById('zon-name').value,
+          cost: parseFloat(document.getElementById('zon-cost').value),
+          estimatedTime: document.getElementById('zon-time').value,
+          status: document.getElementById('zon-status').value
+        };
+
+        const btnSave = document.querySelector('.modal-content .btn-primary');
+        try {
+          if (btnSave) { btnSave.disabled = true; btnSave.textContent = 'Guardando...'; }
+          const result = id 
+            ? await window.ApiService.updateZone(id, zoneData, adminKey)
+            : await window.ApiService.createZone(zoneData, adminKey);
+
+          if (result.success) {
+            window.showToast(id ? 'Zona actualizada' : 'Zona creada', 'success');
+            window.closeModal();
+            const updatedZones = await window.ApiService.getZones();
+            window.renderZones(updatedZones);
+          } else {
+            window.showToast(result.error || 'Error al guardar zona', 'error');
+          }
+        } catch (error) {
+          window.showToast('Error de red: ' + error.message, 'error');
+        } finally {
+          if (btnSave) { btnSave.disabled = false; btnSave.textContent = 'Guardar Zona'; }
+        }
+      };
+
+      window.deleteZone = async (id) => {
+        if (!confirm('¿Seguro que deseas eliminar esta zona de envío?')) return;
+        const adminKey = window.getAdminKey();
+        if (!adminKey) return;
+
+        try {
+          const result = await window.ApiService.deleteZone(id, adminKey);
+          if (result.success) {
+            window.showToast('Zona eliminada', 'success');
+            const updatedZones = await window.ApiService.getZones();
+            window.renderZones(updatedZones);
+          } else {
+            window.showToast(result.error || 'Error al eliminar zona', 'error');
+          }
+        } catch(error) {
+          window.showToast('Error de red: ' + error.message, 'error');
+        }
+      };
+
+      window.renderMessages = (msgs) => {
+        window.mockMessages = msgs || [];
+        document.getElementById('messages-body').innerHTML = window.mockMessages.length ? window.mockMessages.map((m, i) => `
+          <tr style="${m.status === 'No Leido' ? 'background: rgba(var(--primary-rgb), 0.1);' : ''}">
+            <td><strong>${m.name}</strong></td>
+            <td>${m.subject}</td>
+            <td>${m.email}</td>
+            <td>${m.date ? new Date(m.date).toLocaleDateString() : 'N/A'}</td>
+            <td><span class="badge ${m.status === 'No Leido' ? 'badge-primary' : 'badge-neutral'}">${m.status}</span></td>
+            <td>
+              <button class="btn btn-outline btn-sm" onclick="window.viewMessage(${i})">👁️ Ver</button>
+              <button class="btn btn-outline btn-sm" onclick="window.deleteMessage('${m.id}')" style="color:var(--error-color)">🗑️</button>
+            </td>
+          </tr>
+        `).join('') : '<tr><td colspan="6" style="text-align:center;">No hay mensajes recibidos</td></tr>';
+      };
+
+      window.viewMessage = async (idx) => {
+        const m = window.mockMessages[idx];
+        const html = `
+          <div style="background:var(--section-overlay); padding:20px; border-radius:8px;">
+            <p><strong>De:</strong> ${m.name} (${m.email})</p>
+            <p><strong>Asunto:</strong> ${m.subject}</p>
+            <p><strong>Fecha:</strong> ${m.date}</p>
+            <hr style="margin:15px 0; border:none; border-top:1px solid var(--border-color);">
+            <p style="white-space: pre-wrap;">${m.message}</p>
+          </div>
+        `;
+        window.openModal('Mensaje de Contacto', html);
+        
+        // Marcar como leído si no lo está
+        if (m.status === 'No Leido') {
+          const adminKey = window.getAdminKey();
+          if(adminKey) {
+             const res = await window.ApiService.readMessage(m.id, adminKey);
+             if (res && res.success) {
+               m.status = 'Leido';
+               window.renderMessages(window.mockMessages);
+             }
+          }
+        }
+      };
+
+      window.deleteMessage = async (id) => {
+        if (!confirm('¿Eliminar mensaje permanentemente?')) return;
+        const adminKey = window.getAdminKey();
+        if (!adminKey) return;
+        try {
+          const res = await window.ApiService.deleteMessage(id, adminKey);
+          if (res.success) {
+             window.showToast('Mensaje eliminado');
+             const updated = await window.ApiService.getMessages(adminKey);
+             window.renderMessages(updated);
+          } else {
+             window.showToast('Error al eliminar', 'error');
+          }
+        } catch(e) {
+          window.showToast('Error de red', 'error');
+        }
+      };
+
+      window.renderPages = (pages) => {
+        window.mockPages = pages || [];
+        document.getElementById('pages-body').innerHTML = window.mockPages.length ? window.mockPages.map((p, i) => `
+          <tr>
+            <td><strong>/${p.slug}</strong></td>
+            <td>${p.title}</td>
+            <td><span class="badge ${p.status === 'Inactivo' ? 'badge-danger' : 'badge-success'}">${p.status || 'Activo'}</span></td>
+            <td>
+              <button class="btn btn-outline btn-sm" onclick="window.openPageModal(window.mockPages[${i}])">✏️</button>
+              <button class="btn btn-outline btn-sm" onclick="window.deletePage('${p.id}')">🗑️</button>
+            </td>
+          </tr>
+        `).join('') : '<tr><td colspan="4" style="text-align:center;">No hay páginas dinámicas registradas. Haz clic en "Crear Página".</td></tr>';
+      };
+
+      window.openPageModal = (page) => {
+        const isEdit = !!page;
+        const html = `
+          <form id="page-form" onsubmit="event.preventDefault(); window.savePage('${page?.id || ''}')">
+            <div class="form-group">
+              <label>Slug (URL) <small>ej: sobre-nosotros, terminos, politicas</small></label>
+              <input type="text" id="pag-slug" class="form-control" value="${page?.slug || ''}" required>
+            </div>
+            <div class="form-group">
+              <label>Título Principal</label>
+              <input type="text" id="pag-title" class="form-control" value="${page?.title || ''}" required>
+            </div>
+            <div class="form-group">
+              <label>Contenido HTML o Texto</label>
+              <textarea id="pag-content" class="form-control" rows="8" required>${page?.content || ''}</textarea>
+              <small style="color:var(--text-muted);">Puedes usar etiquetas HTML simples (p, br, strong, ul, li).</small>
+            </div>
+            <div class="form-group">
+              <label>Estado</label>
+              <select id="pag-status" class="form-control">
+                <option value="Activo" ${page?.status === 'Activo' ? 'selected' : ''}>Activo</option>
+                <option value="Inactivo" ${page?.status === 'Inactivo' ? 'selected' : ''}>Inactivo (Borrador)</option>
+              </select>
+            </div>
+          </form>
+        `;
+        window.openModal(isEdit ? 'Editar Página' : 'Nueva Página Dinámica', html);
+        const saveBtn = document.querySelector('.modal-content .btn-primary');
+        if (saveBtn) {
+          saveBtn.textContent = 'Guardar Página';
+          saveBtn.onclick = () => document.getElementById('page-form').requestSubmit();
+        }
+      };
+
+      window.savePage = async (id) => {
+        const adminKey = window.getAdminKey();
+        if (!adminKey) return;
+
+        const pageData = {
+          slug: document.getElementById('pag-slug').value.replace(/[^a-z0-9-]/g, '-'),
+          title: document.getElementById('pag-title').value,
+          content: document.getElementById('pag-content').value,
+          status: document.getElementById('pag-status').value
+        };
+
+        const btnSave = document.querySelector('.modal-content .btn-primary');
+        try {
+          if (btnSave) { btnSave.disabled = true; btnSave.textContent = 'Guardando...'; }
+          const result = id 
+            ? await window.ApiService.updatePage(id, pageData, adminKey)
+            : await window.ApiService.createPage(pageData, adminKey);
+
+          if (result.success) {
+            window.showToast(id ? 'Página actualizada' : 'Página creada', 'success');
+            window.closeModal();
+            const updatedPages = await window.ApiService.getPages();
+            window.renderPages(updatedPages);
+          } else {
+            window.showToast(result.error || 'Error al guardar página', 'error');
+          }
+        } catch (error) {
+          window.showToast('Error de red: ' + error.message, 'error');
+        } finally {
+          if (btnSave) { btnSave.disabled = false; btnSave.textContent = 'Guardar Página'; }
+        }
+      };
+
+      window.deletePage = async (id) => {
+        if (!confirm('¿Seguro que deseas eliminar esta página permanentemente?')) return;
+        const adminKey = window.getAdminKey();
+        if (!adminKey) return;
+
+        try {
+          const result = await window.ApiService.deletePage(id, adminKey);
+          if (result.success) {
+            window.showToast('Página eliminada', 'success');
+            const updatedPages = await window.ApiService.getPages();
+            window.renderPages(updatedPages);
+          } else {
+            window.showToast(result.error || 'Error al eliminar página', 'error');
+          }
+        } catch(error) {
+          window.showToast('Error de red: ' + error.message, 'error');
+        }
+      };
+
       // --- LOAD DATA ---
       try {
         const adminKey = sessionStorage.getItem('adminKey') || '';
-        const [products, categories, orders, sliders, coupons, users, notifications, stats] = await Promise.all([
+        const [products, categories, orders, sliders, coupons, users, notifications, stats, zones, pages, configData, messages, roles] = await Promise.all([
           window.ApiService.getProducts(),
           window.ApiService.getCategories(),
           window.ApiService.getOrders(),
@@ -731,8 +1435,16 @@
           window.ApiService.getCoupons(),
           window.ApiService.getUsers(adminKey),
           window.ApiService.getNotifications(adminKey),
-          window.ApiService.getDashboardStats(adminKey)
+          window.ApiService.getDashboardStats(adminKey),
+          window.ApiService.getZones(),
+          window.ApiService.getPages(),
+          window.ApiService.getConfig(),
+          window.ApiService.getMessages(adminKey),
+          window.ApiService.getRoles(adminKey)
         ]);
+
+        window.mockRoles = roles || [];
+        window.mockUsers = users || [];
 
         // 1. Dashboard
         if (stats && !stats.error) {
@@ -750,171 +1462,229 @@
         window.renderCategories(categories);
 
         // 4. Sales
-        document.getElementById('sales-body').innerHTML = orders.map(o => `
-          <tr>
-            <td><strong>${o.id}</strong></td>
-            <td>${o.customer}</td>
-            <td>${o.date}</td>
-            <td><span class="badge badge-neutral">${o.method}</span></td>
-            <td><strong>${window.formatPrice(o.total)}</strong></td>
-            <td><span class="badge ${o.status === 'Completado' ? 'badge-success' : 'badge-warning'}">${o.status}</span></td>
-            <td>
-              <button class="btn btn-outline btn-sm" onclick="window.showToast('Generando Boleta PDF...', 'success')">📄 PDF</button>
-            </td>
-          </tr>
-        `).join('');
-
-        // 5. Users
-        if (Array.isArray(users)) {
-          document.getElementById('users-body').innerHTML = users.map(u => `
-            <tr>
-              <td>${u.id}</td>
-              <td><strong>${u.name}</strong></td>
-              <td>${u.email}</td>
-              <td><span class="badge ${u.role === 'Admin' || u.role === 'admin' ? 'badge-primary' : 'badge-neutral'}">${u.role}</span></td>
-              <td>${u.registered}</td>
-              <td><span class="badge badge-success">${u.status}</span></td>
-              <td>
-                <button class="btn btn-outline btn-sm" onclick="window.showToast('Editando usuario', 'success')">✏️</button>
-              </td>
-            </tr>
-          `).join('');
-        } else {
-          document.getElementById('users-body').innerHTML = `<tr><td colspan="7" style="text-align:center;">Acceso denegado o error al cargar</td></tr>`;
+        if (orders) {
+          window.mockOrdersData = orders;
+          window.renderOrders(orders);
+          
+          // Actualización de Alerta Dinámica en Dashboard
+          const pendientes = orders.filter(o => o.status === 'Pendiente' || o.status === 'Procesando');
+          const alertBanner = document.getElementById('dashboard-alert-banner');
+          const alertText = document.getElementById('dashboard-alert-text');
+          const alertBtn = document.getElementById('dashboard-alert-btn');
+          
+          if (pendientes.length > 0) {
+            alertBanner.style.display = 'flex';
+            alertBanner.style.background = 'rgba(52, 211, 153, 0.15)';
+            alertBanner.style.borderLeftColor = 'var(--success-color)';
+            alertText.innerHTML = `<strong>🔔 Alertas:</strong> Tienes ${pendientes.length} pedido(s) pendiente(s) de revisión.`;
+            alertBtn.style.display = 'inline-block';
+            
+            // Notification Badge en el Header
+            const topBadge = document.getElementById('top-notif-badge');
+            if (topBadge) {
+              topBadge.style.display = 'flex';
+              topBadge.textContent = pendientes.length;
+            }
+          } else {
+            alertBanner.style.display = 'flex';
+            alertBanner.style.background = 'rgba(59, 130, 246, 0.1)';
+            alertBanner.style.borderLeftColor = 'var(--primary-color)';
+            alertText.innerHTML = `<strong>✅ Todo al día:</strong> No hay pedidos pendientes por el momento.`;
+            alertBtn.style.display = 'none';
+            
+            const topBadge = document.getElementById('top-notif-badge');
+            if (topBadge) topBadge.style.display = 'none';
+          }
         }
+
+        // ZONAS DE ENVÍO
+        if (zones) window.renderZones(zones);
+
+        // PÁGINAS y MENSAJES
+        if (pages) window.renderPages(pages);
+        if (messages) window.renderMessages(messages);
+
+        // 5. Users & Roles
+        window.renderUsers(users);
+        window.renderRoles(roles);
 
         // 6. Promotions & Coupons
         window.renderSliders(sliders);
         window.renderCoupons(coupons);
 
-        // 7. Delivery
-        const mockDelivery = [{ zone: 'Lima Metropolitana', cost: 15.00, time: '24-48 hrs' }, { zone: 'Callao', cost: 18.00, time: '24-48 hrs' }, { zone: 'Provincias', cost: 25.00, time: '3-5 días' }];
-        window.mockDeliveryData = mockDelivery;
-        document.getElementById('delivery-body').innerHTML = mockDelivery.map((d, i) => `
-          <tr>
-            <td><strong>${d.zone}</strong></td>
-            <td>${window.formatPrice(d.cost)}</td>
-            <td>${d.time}</td>
-            <td><button class="btn btn-outline btn-sm" onclick="window.openZoneModal(window.mockDeliveryData[${i}])">✏️</button></td>
-          </tr>
-        `).join('');
+        // 7. Delivery (Ahora manejado por base de datos, llama al render si hay fallo en array global o lo pinta vacío)
+        if (zones) {
+          window.renderZones(zones);
+        } else {
+          document.getElementById('delivery-body').innerHTML = '<tr><td colspan="5" style="text-align:center;">No hay zonas registradas</td></tr>';
+        }
+
+        // PÁGINAS DINÁMICAS
+        window.renderPages(pages);
+
+        // CONFIGURACIÓN
+        if (configData && !configData.error) {
+          document.getElementById('set-business-name').value = configData.storeName || '';
+          document.getElementById('set-business-ruc').value = configData.storeRuc || '';
+          document.getElementById('set-tax-rate').value = configData.taxRate || '18';
+          document.getElementById('set-contact-email').value = configData.contactEmail || '';
+          document.getElementById('set-contact-phone').value = configData.contactPhone || '';
+          document.getElementById('set-contact-address').value = configData.contactAddress || '';
+          document.getElementById('set-api-url').value = configData.apiUrl || '';
+          document.getElementById('set-yape').value = configData.yape || '';
+          document.getElementById('set-plin').value = configData.plin || '';
+          document.getElementById('set-mp-pub').value = configData.mpPublic || '';
+          document.getElementById('set-mp-acc').value = configData.mpAccess || '';
+          document.getElementById('set-maintenance-toggle').checked = configData.maintenance === 'true';
+        }
 
         // 8. Reports Enhancements
         if (stats && !stats.error) {
-          document.getElementById('reports-top-products').innerHTML = stats.topProducts.map(p => `
-            <tr>
-              <td><strong>${p.name}</strong></td>
-              <td>${p.sales} und.</td>
-              <td style="color: var(--primary-color); font-weight: bold;">${window.formatPrice(p.revenue)}</td>
-            </tr>
-          `).join('');
+          if (stats.topProducts && Array.isArray(stats.topProducts)) {
+            document.getElementById('reports-top-products').innerHTML = stats.topProducts.map(p => `
+              <tr>
+                <td><strong>${p.name}</strong></td>
+                <td>${p.sales} und.</td>
+                <td style="color: var(--primary-color); font-weight: bold;">${window.formatPrice(p.revenue)}</td>
+              </tr>
+            `).join('');
+          } else {
+             document.getElementById('reports-top-products').innerHTML = '<tr><td colspan="3" style="text-align:center;">No hay datos suficientes</td></tr>';
+          }
 
-          document.getElementById('reports-payment-methods').innerHTML = `
-            <div class="progress-group">
-              <div class="progress-header"><span>Mercado Pago</span><span>${stats.paymentMethods.mercadopago}%</span></div>
-              <div class="progress-bar-bg"><div class="progress-bar-fill" style="width: ${stats.paymentMethods.mercadopago}%; background: #009ee3;"></div></div>
-            </div>
-            <div class="progress-group">
-              <div class="progress-header"><span>Yape</span><span>${stats.paymentMethods.yape}%</span></div>
-              <div class="progress-bar-bg"><div class="progress-bar-fill" style="width: ${stats.paymentMethods.yape}%; background: #742284;"></div></div>
-            </div>
-            <div class="progress-group">
-              <div class="progress-header"><span>Plin</span><span>${stats.paymentMethods.plin}%</span></div>
-              <div class="progress-bar-bg"><div class="progress-bar-fill" style="width: ${stats.paymentMethods.plin}%; background: #00d2b6;"></div></div>
-            </div>
-          `;
+          if (stats.paymentMethods) {
+            const pm = stats.paymentMethods;
+            const totalPm = (pm.mercadopago || 0) + (pm.yape || 0) + (pm.plin || 0) || 1;
+            const pct = (val) => Math.round((val / totalPm) * 100) || 0;
+            
+            document.getElementById('reports-payment-methods').innerHTML = `
+              <div class="progress-group">
+                <div class="progress-header"><span>Mercado Pago</span><span>${pct(pm.mercadopago)}%</span></div>
+                <div class="progress-bar-bg"><div class="progress-bar-fill" style="width: ${pct(pm.mercadopago)}%; background: #009ee3;"></div></div>
+              </div>
+              <div class="progress-group">
+                <div class="progress-header"><span>Yape</span><span>${pct(pm.yape)}%</span></div>
+                <div class="progress-bar-bg"><div class="progress-bar-fill" style="width: ${pct(pm.yape)}%; background: #742284;"></div></div>
+              </div>
+              <div class="progress-group">
+                <div class="progress-header"><span>Plin</span><span>${pct(pm.plin)}%</span></div>
+                <div class="progress-bar-bg"><div class="progress-bar-fill" style="width: ${pct(pm.plin)}%; background: #00d2b6;"></div></div>
+              </div>
+            `;
+          }
         }
 
         // 9. Notifications
         if (Array.isArray(notifications)) {
+          let unreadCount = 0;
           document.getElementById('notifications-list').innerHTML = notifications.map(n => {
+            const isRead = n.read === true || n.read === 'true';
+            if (!isRead) unreadCount++;
+
             let icon = '🔔';
             if(n.type === 'order') icon = '📦';
             if(n.type === 'alert') icon = '⚠️';
             if(n.type === 'payment') icon = '💰';
+            if(n.type === 'user') icon = '👤';
             
             return `
-            <div class="notif-page-item ${!n.read ? 'unread' : ''}">
+            <div class="notif-page-item ${!isRead ? 'unread' : ''}">
               <div class="notif-page-icon">${icon}</div>
               <div style="flex-grow: 1;">
                 <h4 style="font-size: 1.1rem; margin-bottom: 5px; color: var(--text-color);">${n.title}</h4>
                 <p style="color: var(--text-light); margin-bottom: 5px;">${n.message}</p>
                 <span style="font-size: 0.8rem; color: var(--primary-color); font-weight: bold;">${n.date}</span>
               </div>
-              ${!n.read ? `<button class="btn btn-sm btn-outline" onclick="this.parentElement.classList.remove('unread'); this.remove();">Marcar leída</button>` : ''}
+              ${!isRead ? `<button class="btn btn-sm btn-outline" onclick="this.parentElement.classList.remove('unread'); this.remove();">Marcar leída</button>` : ''}
             </div>
-          `}).join('');
+          `}).join('') || '<div style="padding: 20px; text-align: center;">No hay notificaciones</div>';
+          
+          // Actualizar Badge en Top Bar
+          const topBadge = document.getElementById('top-notif-badge');
+          if (topBadge) {
+            if (unreadCount > 0) {
+              topBadge.textContent = unreadCount;
+              topBadge.style.display = 'flex';
+            } else {
+              topBadge.style.display = 'none';
+            }
+          }
         }
 
       } catch (error) {
         console.error("Error loading admin data", error);
+      } finally {
+        // --- OCULTAR LOADER CUANDO TERMINA O FALLA ---
+        const loader = document.getElementById('global-loader');
+        if (loader) {
+          loader.style.opacity = '0';
+          loader.style.visibility = 'hidden';
+          setTimeout(() => loader.style.display = 'none', 500); 
+        }
       }
 
-      // --- SETTINGS & PAGES LOGIC ---
+      // --- SETTINGS LOGIC ---
       const settings = window.ApiService.getSettings();
       
-      // Load Pages Data
-      document.getElementById('set-about-title').value = settings.aboutTitle;
-      document.getElementById('set-about-text').value = settings.aboutText;
-      document.getElementById('set-contact-email').value = settings.contactEmail;
-      document.getElementById('set-contact-phone').value = settings.contactPhone;
-      document.getElementById('set-contact-address').value = settings.contactAddress;
-      
-      // Load Business Settings Data
-      document.getElementById('set-business-name').value = settings.businessName || '';
-      document.getElementById('set-business-ruc').value = settings.businessRuc || '';
-      document.getElementById('set-tax-rate').value = settings.taxRate || 18;
-      document.getElementById('set-api-url').value = settings.apiUrl || '';
-      
-      // Load Payment Settings
-      document.getElementById('set-yape').value = settings.yapePhone || '';
-      document.getElementById('set-plin').value = settings.plinPhone || '';
-      document.getElementById('set-mp-pub').value = settings.mpPublicKey || '';
-      document.getElementById('set-mp-acc').value = settings.mpAccessToken || '';
-
       const maintenanceToggle = document.getElementById('set-maintenance-toggle');
-      maintenanceToggle.checked = settings.maintenanceMode;
+      if (maintenanceToggle) {
+        maintenanceToggle.checked = settings.maintenanceMode;
 
-      maintenanceToggle.addEventListener('change', (e) => {
-        window.ApiService.saveSettings({ maintenanceMode: e.target.checked });
-        window.showToast(e.target.checked ? 'Modo Mantenimiento Activado' : 'Tienda en línea nuevamente', e.target.checked ? 'warning' : 'success');
-      });
-
-      window.saveDynamicPages = () => {
-        window.ApiService.saveSettings({
-          aboutTitle: document.getElementById('set-about-title').value,
-          aboutText: document.getElementById('set-about-text').value,
-          contactEmail: document.getElementById('set-contact-email').value,
-          contactPhone: document.getElementById('set-contact-phone').value,
-          contactAddress: document.getElementById('set-contact-address').value
+        maintenanceToggle.addEventListener('change', (e) => {
+          const adminKey = window.getAdminKey();
+          if (adminKey) {
+            window.ApiService.updateSettings({ maintenanceMode: e.target.checked }, adminKey);
+            window.showToast(e.target.checked ? 'Modo Mantenimiento Activado' : 'Tienda en línea nuevamente', e.target.checked ? 'warning' : 'success');
+          } else {
+            e.target.checked = !e.target.checked;
+          }
         });
-        window.showToast('Contenido guardado exitosamente', 'success');
-      };
+      }
 
-      window.saveSettingsData = () => {
-        window.ApiService.saveSettings({
-          businessName: document.getElementById('set-business-name').value,
-          businessRuc: document.getElementById('set-business-ruc').value,
-          taxRate: document.getElementById('set-tax-rate').value,
-          apiUrl: document.getElementById('set-api-url').value,
-          yapePhone: document.getElementById('set-yape').value,
-          plinPhone: document.getElementById('set-plin').value,
-          mpPublicKey: document.getElementById('set-mp-pub').value,
-          mpAccessToken: document.getElementById('set-mp-acc').value
-        });
-        window.showToast('Configuración guardada exitosamente', 'success');
-      };
-
-      // --- ADMIN KEY MANAGEMENT ---
-      window.getAdminKey = () => {
-        let key = sessionStorage.getItem('adminKey');
-        if (!key) {
-          key = prompt('Por seguridad, ingresa tu clave de Admin para confirmar los cambios:');
-          if (key) sessionStorage.setItem('adminKey', key);
-          else return null;
+      window.saveSettingsData = async (event) => {
+        const adminKey = window.getAdminKey();
+        if (!adminKey) return;
+        
+        let targetBtn = null;
+        let originalText = 'Guardar';
+        if (event && event.currentTarget) {
+          targetBtn = event.currentTarget;
+          originalText = targetBtn.textContent;
+          targetBtn.disabled = true;
+          targetBtn.innerHTML = '<span class="spinner-inline"></span>Guardando...';
         }
-        return key;
+
+        try {
+          const result = await window.ApiService.updateSettings({
+            storeName: document.getElementById('set-business-name').value,
+            storeRuc: document.getElementById('set-business-ruc').value,
+            taxRate: document.getElementById('set-tax-rate').value,
+            contactEmail: document.getElementById('set-contact-email').value,
+            contactPhone: document.getElementById('set-contact-phone').value,
+            contactAddress: document.getElementById('set-contact-address').value,
+            apiUrl: document.getElementById('set-api-url').value,
+            yape: document.getElementById('set-yape').value,
+            plin: document.getElementById('set-plin').value,
+            mpPublic: document.getElementById('set-mp-pub').value,
+            mpAccess: document.getElementById('set-mp-acc').value,
+            maintenance: document.getElementById('set-maintenance-toggle').checked
+          }, adminKey);
+          
+          if(result && result.success) {
+            window.showToast('Configuración guardada exitosamente', 'success');
+          } else {
+            window.showToast('Error: ' + (result?.error || 'Falló la escritura'), 'error');
+          }
+        } catch(e) {
+          window.showToast('Error de red al guardar datos', 'error');
+        } finally {
+          if (targetBtn) {
+            targetBtn.disabled = false;
+            targetBtn.textContent = originalText;
+          }
+        }
       };
+        
 
       // --- PRODUCT CRUD ---
       window.saveProductData = async (existingProdId) => {
@@ -1103,13 +1873,14 @@
         const image = document.getElementById('sld-image').value.trim();
         const buttonText = document.getElementById('sld-btn-text').value.trim();
         const link = document.getElementById('sld-link').value.trim();
+        const status = document.getElementById('sld-status').value;
 
         if (!title || !image) {
           window.showToast('El título y la URL de imagen son obligatorios', 'warning');
           return;
         }
 
-        const payload = { title, subtitle, image, buttonText, link };
+        const payload = { title, subtitle, image, buttonText, link, status };
         if (existingSliderId) payload.id = existingSliderId;
 
         try {
@@ -1289,37 +2060,6 @@
         } finally {
           targetBtn.disabled = false;
           targetBtn.textContent = 'Cambiar Contraseña';
-        }
-      };
-
-      // Configuration Save
-      window.saveSettingsData = async () => {
-        const payload = {
-          storeName: document.getElementById('set-business-name').value,
-          storeRuc: document.getElementById('set-business-ruc').value,
-          taxRate: document.getElementById('set-tax-rate').value,
-          yape: document.getElementById('set-yape').value,
-          plin: document.getElementById('set-plin').value,
-          mpPublic: document.getElementById('set-mp-pub').value,
-          mpAccess: document.getElementById('set-mp-acc').value,
-          maintenance: document.getElementById('set-maintenance-toggle').checked
-        };
-        const targetBtn = event.currentTarget || event.target;
-        targetBtn.disabled = true;
-        targetBtn.textContent = 'Guardando...';
-
-        try {
-          const res = await ApiService.request('saveConfig', { settings: payload });
-          if (res.success) {
-            window.showToast('Configuración guardada exitosamente.', 'success');
-          } else {
-            window.showToast(res.error || 'Error al guardar configuración.', 'error');
-          }
-        } catch (e) {
-          window.showToast('Error de red al guardar.', 'error');
-        } finally {
-          targetBtn.disabled = false;
-          targetBtn.textContent = 'Guardar Toda la Configuración';
         }
       };
 

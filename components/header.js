@@ -1,16 +1,22 @@
 import { CartService } from '../services/cart.js';
 import { CONFIG } from '../config/config.js';
 import { AuthService } from '../services/auth.js';
+import { ApiService } from '../services/api.js';
 
 export function renderHeader() {
   const user = AuthService.getUser();
+  let storeName = CONFIG.STORE_NAME || 'TrendStore';
+  try {
+    const settings = ApiService.getSettings();
+    if (settings && settings.storeName) storeName = settings.storeName;
+  } catch(e) {}
   
   const headerHtml = `
     <header>
       <div class="container nav-container">
         <a href="${window.BASE_URL}/" class="logo">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary-color);"><path d="M20.42 4.58a5.4 5.4 0 0 0-7.65 0l-.77.78-.77-.78a5.4 5.4 0 0 0-7.65 0C1.46 6.7 1.33 10.28 4 13l8 8 8-8c2.67-2.72 2.54-6.3.42-8.42z"></path></svg>
-          ${CONFIG.STORE_NAME}<span>.</span>
+          <span id="header-store-name">${storeName}</span><span style="color:var(--primary-color)">.</span>
         </a>
         
         <nav class="nav-links">
@@ -45,11 +51,15 @@ export function renderHeader() {
                     <div class="user-dropdown-name">${user.name}</div>
                     <div class="user-dropdown-email">${user.email}</div>
                   </div>
-                  <a href="${window.BASE_URL}/account/?tab=profile" class="user-dropdown-item">👤 Mi Perfil</a>
-                  <a href="${window.BASE_URL}/account/?tab=purchases" class="user-dropdown-item">📦 Mis Compras</a>
-                  <a href="${window.BASE_URL}/account/?tab=favorites" class="user-dropdown-item">❤️ Mis Favoritos</a>
-                  ${user.role === 'admin' ? `<a href="${window.BASE_URL}/admin/" class="user-dropdown-item" style="border-top: 1px dashed var(--border-color);">⚙️ Panel Admin</a>` : ''}
-                  <div class="user-dropdown-item danger" onclick="window.logoutClient()">🚪 Cerrar Sesión</div>
+                  ${['admin', 'superadmin', 'owner', 'support'].includes((user.role || '').toLowerCase()) ? `
+                    <a href="${window.BASE_URL}/admin/" class="user-dropdown-item">⚙️ Panel Admin</a>
+                    <a href="${window.BASE_URL}/account/?tab=profile" class="user-dropdown-item">👤 Mi Perfil</a>
+                  ` : `
+                    <a href="${window.BASE_URL}/account/?tab=profile" class="user-dropdown-item">👤 Mi Perfil</a>
+                    <a href="${window.BASE_URL}/account/?tab=purchases" class="user-dropdown-item">📦 Mis Compras</a>
+                    <a href="${window.BASE_URL}/account/?tab=favorites" class="user-dropdown-item">❤️ Mis Favoritos</a>
+                  `}
+                  <div class="user-dropdown-item danger" id="btn-logout" style="${['admin', 'superadmin', 'owner', 'support'].includes((user.role || '').toLowerCase()) ? '' : 'border-top: 1px dashed var(--border-color);'}">🚪 Cerrar Sesión</div>
                 ` : ''}
               </div>
             </div>
@@ -65,6 +75,13 @@ export function renderHeader() {
   // --- USER DROPDOWN LOGIC ---
   const userAvatar = document.getElementById('user-avatar');
   const userDropdown = document.getElementById('user-dropdown');
+  const btnLogout = document.getElementById('btn-logout');
+  
+  if (btnLogout) {
+    btnLogout.addEventListener('click', () => {
+      AuthService.logout();
+    });
+  }
   
   if (userAvatar && userDropdown) {
     userAvatar.addEventListener('click', (e) => {
