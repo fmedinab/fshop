@@ -37,9 +37,11 @@
     import { renderHeader } from '../components/header.js';
     import { renderFooter } from '../components/footer.js';
     import { CartService } from '../services/cart.js';
+    import { AuthService } from '../services/auth.js';
     import '../assets/js/main.js';
     
     window.CartService = CartService;
+    window.AuthService = AuthService;
 
     document.addEventListener('DOMContentLoaded', async () => {
       renderHeader();
@@ -97,13 +99,24 @@
             <span>Total</span>
             <span>${window.formatPrice(total)}</span>
           </div>
-          <a href="../checkout/" class="btn btn-primary" style="width: 100%; margin-top: 20px; font-size: 1.1rem; padding: 15px;">
+          <button id="proceed-to-checkout-btn" class="btn btn-primary" style="width: 100%; margin-top: 20px; font-size: 1.1rem; padding: 15px;">
             Proceder al Pago
-          </a>
+          </button>
         </div>
       `;
 
       container.innerHTML = itemsHtml + summaryHtml;
+
+      // Validar sesión antes de ir a checkout
+      document.getElementById('proceed-to-checkout-btn').addEventListener('click', () => {
+        const user = AuthService.getUser();
+        if (!user) {
+          window.showToast('Debes iniciar sesión para continuar', 'warning');
+          setTimeout(() => window.location.href = window.BASE_URL + '/login/', 1500);
+          return;
+        }
+        window.location.href = window.BASE_URL + '/checkout/';
+      });
 
       document.querySelectorAll('.qty-input').forEach(input => {
         input.addEventListener('change', (e) => {

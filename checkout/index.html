@@ -219,6 +219,15 @@
 
       document.getElementById('checkout-form').addEventListener('submit', async (e) => {
         e.preventDefault();
+        
+        // Validar sesión ANTES de proceder
+        const currentUser = AuthService.getUser();
+        if (!currentUser) {
+          window.showToast('Debes iniciar sesión para continuar', 'warning');
+          setTimeout(() => window.location.href = window.BASE_URL + '/login/', 1500);
+          return;
+        }
+
         const btn = document.getElementById('submit-order-btn');
         btn.innerHTML = '<span class="spinner"></span> Procesando...'; btn.disabled = true;
 
@@ -236,7 +245,6 @@
         try {
           const response = await ApiService.createOrder(orderData);
           
-          const currentUser = AuthService.getUser();
           if (currentUser && currentUser.email === orderData.customer.email) {
             currentUser.phone = orderData.customer.phone;
             currentUser.address = orderData.customer.address;
@@ -248,7 +256,7 @@
           else {
             CartService.clearCart();
             window.showToast('¡Pedido confirmado!', 'success');
-            setTimeout(() => window.location.href = '/', 2000);
+            setTimeout(() => window.location.href = window.BASE_URL + '/', 2000);
           }
         } catch (error) {
           window.showToast('Error al procesar', 'error');
