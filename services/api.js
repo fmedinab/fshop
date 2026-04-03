@@ -14,7 +14,8 @@ const mockOrders = [
 ];
 
 const mockSliders = [
-  { id: 's1', title: 'Nueva Colección', subtitle: 'Hasta 40% de descuento.', image: 'https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&w=1600&q=80', link: '/categories/', buttonText: 'Ver Colección' }
+  { id: 'SLD-001', title: 'Nueva Colección de Invierno', subtitle: 'Hasta 40% de descuento en prendas seleccionadas.', image: 'https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&w=1600&q=80', link: '/categories/moda', buttonText: 'Ver Colección', status: 'Activo' },
+  { id: 'SLD-002', title: 'Lo Último en Tecnología', subtitle: 'Lleva tu productividad al siguiente nivel.', image: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=1600&q=80', link: '/categories/tecnologia', buttonText: 'Explorar ahora', status: 'Activo' }
 ];
 
 const mockCoupons = [
@@ -26,6 +27,13 @@ const mockUsers = [
   { id: 'U-001', name: 'Juan Pérez', email: 'juan@example.com', role: 'Cliente', status: 'Activo', registered: '2023-01-15' },
   { id: 'U-002', name: 'María Gómez', email: 'maria@example.com', role: 'Cliente', status: 'Activo', registered: '2023-05-20' },
   { id: 'U-003', name: 'Admin Principal', email: 'admin@trendstore.com', role: 'Admin', status: 'Activo', registered: '2022-11-10' }
+];
+
+const mockRoles = [
+  { id: 'R-001', name: 'Admin', description: 'Acceso total al sistema', permissions: ['all'] },
+  { id: 'R-002', name: 'Editor', description: 'Gestión de productos y páginas', permissions: ['products', 'pages', 'categories'] },
+  { id: 'R-003', name: 'Soporte', description: 'Gestión de usuarios y mensajes', permissions: ['users', 'messages'] },
+  { id: 'R-004', name: 'Cliente', description: 'Usuario regular', permissions: [] }
 ];
 
 const mockNotifications = [
@@ -86,6 +94,7 @@ export const ApiService = {
   async getSliders() { return this.fetch('sliders'); },
   async getCoupons() { return this.fetch('coupons'); },
   async getUsers(adminKey) { return this.fetch('users', { adminKey }); },
+  async getRoles(adminKey) { return this.fetch('roles', { adminKey }); },
   async getNotifications(adminKey) { return this.fetch('notifications', { adminKey }); },
   async getConfig() { return this.fetch('config'); },
   
@@ -251,12 +260,132 @@ export const ApiService = {
     return await response.json();
   },
 
+  // ========== MÉTODOS DE ADMIN (ZONAS DE ENVÍO) ==========
+  async getZones() { return this.fetch('zones'); },
+  
+  async createZone(zoneData, adminKey) {
+    if (!CONFIG.API_URL) return { success: true, id: 'ZON-' + Date.now() };
+    const response = await fetch(CONFIG.API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'createZone', adminKey, ...zoneData }),
+    });
+    return await response.json();
+  },
+
+  async updateZone(zoneId, zoneData, adminKey) {
+    if (!CONFIG.API_URL) return { success: true };
+    const response = await fetch(CONFIG.API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'editZone', adminKey, id: zoneId, ...zoneData }),
+    });
+    return await response.json();
+  },
+
+  async deleteZone(zoneId, adminKey) {
+    if (!CONFIG.API_URL) return { success: true };
+    const response = await fetch(CONFIG.API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'deleteZone', adminKey, id: zoneId }),
+    });
+    return await response.json();
+  },
+
+  // ========== MÉTODOS DE CONTACTO (PÚBLICO) ==========
+  async sendMessage(msgData) {
+    if (!CONFIG.API_URL) return { success: true };
+    const response = await fetch(CONFIG.API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'sendMessage', ...msgData }),
+    });
+    return await response.json();
+  },
+
+  // ========== MÉTODOS DE ADMIN (MENSAJES) ==========
+  async getMessages(adminKey) { return this.fetch('messages', { adminKey }); },
+  async readMessage(msgId, adminKey) {
+    if (!CONFIG.API_URL) return { success: true };
+    const response = await fetch(CONFIG.API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'readMessage', adminKey, id: msgId }),
+    });
+    return await response.json();
+  },
+  async deleteMessage(msgId, adminKey) {
+    if (!CONFIG.API_URL) return { success: true };
+    const response = await fetch(CONFIG.API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'deleteMessage', adminKey, id: msgId }),
+    });
+    return await response.json();
+  },
+
   // ========== MÉTODOS DE ADMIN (NOTIFICACIONES) ==========
   async createNotification(notificationData, adminKey) {
     if (!CONFIG.API_URL) return { success: true, notificationId: 'NOTIF-' + Date.now() };
     const response = await fetch(CONFIG.API_URL, {
       method: 'POST',
       body: JSON.stringify({ action: 'createNotification', adminKey, ...notificationData }),
+    });
+    return await response.json();
+  },
+
+  // ========== MÉTODOS DE ADMIN (PÁGINAS) ==========
+  async getPages() { return this.fetch('pages'); },
+  async createPage(pageData, adminKey) {
+    if (!CONFIG.API_URL) return { success: true };
+    const response = await fetch(CONFIG.API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'createPage', adminKey, ...pageData }),
+    });
+    return await response.json();
+  },
+  async updatePage(pageId, pageData, adminKey) {
+    if (!CONFIG.API_URL) return { success: true };
+    const response = await fetch(CONFIG.API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'editPage', adminKey, id: pageId, ...pageData }),
+    });
+    return await response.json();
+  },
+  async deletePage(pageId, adminKey) {
+    if (!CONFIG.API_URL) return { success: true };
+    const response = await fetch(CONFIG.API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'deletePage', adminKey, id: pageId }),
+    });
+    return await response.json();
+  },
+
+  // ========== MÉTODOS DE ADMIN (ROLES) ==========
+  async createRole(roleData, adminKey) {
+    if (!CONFIG.API_URL) return { success: true, roleId: 'R-' + Date.now() };
+    const response = await fetch(CONFIG.API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'createRole', adminKey, ...roleData }),
+    });
+    return await response.json();
+  },
+  async updateRole(roleId, roleData, adminKey) {
+    if (!CONFIG.API_URL) return { success: true };
+    const response = await fetch(CONFIG.API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'editRole', adminKey, id: roleId, ...roleData }),
+    });
+    return await response.json();
+  },
+  async deleteRole(roleId, adminKey) {
+    if (!CONFIG.API_URL) return { success: true };
+    const response = await fetch(CONFIG.API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'deleteRole', adminKey, id: roleId }),
+    });
+    return await response.json();
+  },
+  async updateUserRole(userId, newRole, adminKey) {
+    if (!CONFIG.API_URL) return { success: true };
+    const response = await fetch(CONFIG.API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'updateUserRole', adminKey, id: userId, role: newRole }),
     });
     return await response.json();
   },
@@ -322,7 +451,20 @@ export const ApiService = {
         if (action === 'sliders') resolve(mockSliders);
         if (action === 'coupons') resolve(mockCoupons);
         if (action === 'users') resolve(mockUsers);
+        if (action === 'roles') resolve(mockRoles);
         if (action === 'notifications') resolve(mockNotifications);
+        if (action === 'stats') resolve({
+          totalSales: 24500.50, 
+          totalOrders: 156, 
+          activeUsers: 89, 
+          recentOrders: mockOrders,
+          topProducts: [
+            { name: 'Zapatillas Urban', sales: 45, revenue: 14400 },
+            { name: 'Sony WH-1000XM5', sales: 22, revenue: 28578 },
+            { name: 'Chaqueta de Cuero', sales: 15, revenue: 5250 }
+          ],
+          paymentMethods: { mercadopago: 65, yape: 25, plin: 10 }
+        });
       }, 200);
     });
   }

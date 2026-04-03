@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Página | TrendStore</title>
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <style>
+    .page-header { background: var(--primary-color); color: white; padding: 60px 20px; text-align: center; border-radius: var(--border-radius); margin-top: 20px; }
+    .page-content { background: var(--card-background); padding: 40px; border-radius: var(--border-radius); box-shadow: var(--box-shadow); border: 1px solid var(--border-color); margin-top: -30px; position: relative; z-index: 10; line-height: 1.8; font-size: 1.1rem; color: var(--text-color); white-space: pre-line; min-height: 400px; }
+    
+    @media (max-width: 768px) {
+      .page-content { padding: 25px; margin-top: -20px; font-size: 1rem; }
+      .page-header { padding: 40px 15px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="header-container"></div>
+
+  <main class="container py-2">
+    <div class="page-header">
+      <h1 style="font-size: 2.5rem; font-weight: 900; margin-bottom: 10px;" id="dyn-page-title">Cargando...</h1>
+    </div>
+    
+    <div class="page-content" id="dyn-page-content">
+      <div class="skeleton" style="height: 300px; border-radius: 8px;"></div>
+    </div>
+  </main>
+
+  <div id="footer-container"></div>
+
+  <script src="../assets/js/base-path.js"></script>
+  <script type="module">
+    import { renderHeader } from '../components/header.js';
+    import { renderFooter } from '../components/footer.js';
+    import { ApiService } from '../services/api.js';
+    
+    window.ApiService = ApiService;
+    const script = document.createElement('script');
+    script.src = '../assets/js/main.js';
+    script.type = 'module';
+    document.body.appendChild(script);
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      renderHeader();
+      // El footer es async para pintar páginas, lo ejecutamos libre
+      renderFooter();
+
+      // Obtener el slug desde la URL (ej: /page/?id=terminos-y-condiciones)
+      const urlParams = new URLSearchParams(window.location.search);
+      const pageSlug = urlParams.get('id');
+
+      if (!pageSlug) {
+        document.getElementById('dyn-page-title').textContent = "Página no encontrada";
+        document.getElementById('dyn-page-content').innerHTML = "<p>No se especificó ninguna página en la ruta.</p>";
+        return;
+      }
+
+      try {
+        const pages = await window.ApiService.getPages();
+        const currentPage = pages.find(p => p.slug === pageSlug && p.status === 'Activo');
+
+        if (currentPage) {
+          document.getElementById('dyn-page-title').textContent = currentPage.title;
+          
+          // Como es contenido dinámico HTML básico que se almacena, usamos innerHTML
+          // En producción idealmente validas el XSS, pero es un dashboard admin propio.
+          const formattedContent = currentPage.content.replace(/\n\n/g, '<br><br>');
+          document.getElementById('dyn-page-content').innerHTML = formattedContent;
+          
+          // Update window title 
+          document.title = `${currentPage.title} | TrendStore`;
+        } else {
+          document.getElementById('dyn-page-title').textContent = "Página Inactiva o no existe";
+          document.getElementById('dyn-page-content').innerHTML = "<p>El contenido de esta ruta no se encuentra disponible actualmente.</p>";
+        }
+      } catch(error) {
+        console.error("Error al cargar la página dinámica", error);
+        document.getElementById('dyn-page-title').textContent = "Error al Cargar";
+        document.getElementById('dyn-page-content').innerHTML = "<p>Ocurrió un error al contactar al servidor. Inténtalo más tarde.</p>";
+      }
+    });
+  </script>
+</body>
+</html>

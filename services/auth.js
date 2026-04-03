@@ -50,15 +50,13 @@ export const AuthService = {
       const response = await ApiService.registerUser(name, email, password, phone, address, document);
       
       if (response && response.success && response.user) {
-        // En lugar de iniciar sesión inmediatamente, solo devolvemos éxito
-        // localStorage.setItem('currentUser', JSON.stringify(response.user));
-        return true;
+        return { success: true };
       }
       
-      return false;
+      return { success: false, error: response.error || "No se pudo registrar en la base de datos." };
     } catch (error) {
       console.error('Error in register:', error);
-      return false;
+      return { success: false, error: "Error de conexión (Bloqueado por el navegador o red)." };
     }
   },
 
